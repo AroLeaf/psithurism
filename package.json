@@ -1,0 +1,24 @@
+{
+  "name": "psithurism",
+  "type": "commonjs",
+  "version": "0.1.0",
+  "decription": "A programming language with a lot of | pipes",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx swc src -d dist",
+    "dev": "npx ts-node src"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@aroleaf/tsconfig": "^1.0.0",
+    "@swc/cli": "^0.1.57",
+    "@swc/core": "^1.2.182",
+    "@swc/helpers": "^0.3.13",
+    "ts-node": "^10.8.0",
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@aroleaf/parser": "^2.2.3",
+    "xregexp": "^5.1.0"
+  }
+}
