@@ -1,0 +1,1 @@
+;module.exports=(args)=>((piped) => builtins['.']((()=>[])(piped).concat(piped)))(args);if (require.main === module) module.exports(process.argv.slice(2));
