@@ -138,5 +138,4 @@ array.is(ctx => {
   ctx.discard('square_close');
 })
 
-
 export { program as default };

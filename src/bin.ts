@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { program } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -19,12 +20,13 @@ interface RunOptions {
 
 
 program
-  .name('psithurism')
+  .name('sidhe')
   .description('compiles and runs psithurism scripts')
   .version(pkg.version);
 
 program
   .command('compile')
+  .description('compile a psithurism script')
   .argument('<file>', 'the path to a file containing the code to compile')
   .option('-o, --out <file>', 'path to a file to save the compiled code to, prints to stdout if not provided')
   .option('-r, --raw', 'treat the input as raw code instead of a filepath')
