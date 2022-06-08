@@ -15,7 +15,7 @@ const addOrSub = new Node('add_or_sub');
 const power = new Node('power');
 const operator = new Node('operator');
 const call = new Node('call');
-const explicitList = new Node('list');
+const list = new Node('list');
 const array = new Node('array');
 
 const literal = new Node('literal');
@@ -111,14 +111,14 @@ call.is(ctx => {
     'add', 'sub',
     'assign'
   )) {
-    if (ctx.assert('parens_open')) ctx.expect(explicitList);
+    if (ctx.assert('parens_open')) ctx.expect(list);
   } else return ctx.expect(literal);
   return;
 });
 
-literal.is(ctx => ctx.expect('string', 'regex', 'number', explicitList));
+literal.is(ctx => ctx.expect('string', 'regex', 'number', list));
 
-explicitList.is(ctx => {
+list.is(ctx => {
   if (!ctx.assert('parens_open')) return ctx.expect(array);
   ctx.discard('parens_open');
   ctx.expect(pipe);

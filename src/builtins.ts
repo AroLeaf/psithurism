@@ -1,17 +1,17 @@
-function arrayOps(args: any[], callback: Function): [any] {
+function vectorize(args: any[], callback: Function): [any] {
   return [args.reduce((a,v) => {
     if (Array.isArray(a)) {
       if (Array.isArray(v)) {
         return a.length > v.length
-          ? a.map((item: any, i: number) => arrayOps([item, v[i]], callback)[0])
-          : v.map((item: any, i: number) => arrayOps([a[i], item], callback)[0]);
+          ? a.map((item: any, i: number) => vectorize([item, v[i]], callback)[0])
+          : v.map((item: any, i: number) => vectorize([a[i], item], callback)[0]);
       }
 
-      return a.map((item: number|string) => arrayOps([item, v], callback)[0]);
+      return a.map((item: number|string) => vectorize([item, v], callback)[0]);
     }
     
     if (Array.isArray(v)) {
-      return v.map((item: number|string) => arrayOps([a, item], callback)[0]);
+      return v.map((item: number|string) => vectorize([a, item], callback)[0]);
     }
 
     return callback(a,v);
@@ -28,7 +28,7 @@ const builtins: { [key: string]: Function } = {
   '«': (args: any[]): any[] => args.slice(1),
   
 
-  '+': (args: any[]): [any] => arrayOps(args, (a: any, v: any) => {
+  '+': (args: any[]): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -48,7 +48,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '-': (args: any[]): [any] => arrayOps(args, (a: any, v: any) => {
+  '-': (args: any[]): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -67,7 +67,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '*': (args: any[]): [any] => arrayOps(args, (a: any, v: any)=> {
+  '*': (args: any[]): [any] => vectorize(args, (a: any, v: any)=> {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     
     switch (types) {
@@ -87,7 +87,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '/': (args: any[]): [any] => arrayOps(args, (a: any, v: any) => {
+  '/': (args: any[]): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  : return NaN;
@@ -106,7 +106,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '%': (args: any[]): [any] => arrayOps(args, (a: any, v: any) => {
+  '%': (args: any[]): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  : return NaN;
@@ -125,7 +125,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '^': (args: any[]): [any]|any[] => arrayOps(args, (a: any, v: any) => {
+  '^': (args: any[]): [any]|any[] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  : return 1;

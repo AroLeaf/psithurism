@@ -5,8 +5,8 @@ import XRegExp from 'xregexp';
 
 export class Compiler {
   compile(node: ParsedNode) {
-    const functions: { [key: string]: string } = {};
-    const expressions: string[] = [];
+    const functions: { [key: string]: Function } = {};
+    const expressions: Function[] = [];
 
     const assignments = node.children.filter(child => child.type === 'assignment') as ParsedNode[];
     const statements = node.children.filter(child => child.type !== 'assignment') as ParsedNode[];
@@ -23,10 +23,10 @@ export class Compiler {
       expressions.push(expression);
     }
 
-    return `${Object.entries(functions).map(([name, func]) => `const ${name}=${func}`).join(';')};module.exports=(...args)=>${expressions.reduce((a,v) => `${v}(${a})`, 'args')};if (require.main === module) module.exports(process.argv.slice(2));`;
+    return `${Object.entries(functions).map(([name, func]) => `const ${name}=((args) => ${func('args')})`).join(';')};module.exports=(args)=>${expressions.reduce((a,v) => v(a), 'args')};if (process.argv[1]?process.argv[1]==__filename:true) module.exports(process.argv.slice(2));`;
   }
   
-  expression(expr: ParsedNode|Token): string {
+  expression(expr: ParsedNode|Token): Function {
     switch (expr.type) {
       case 'pipe': return this.pipe(<ParsedNode>expr);
       case 'conditional': return this.conditional(<ParsedNode>expr);
@@ -51,16 +51,19 @@ export class Compiler {
     return exprs.map(expr => this.expression(expr)).reduce((from, to, i) => {
       const op = ops[i-1].value;
       switch (op) {
-        case '|': return `((args) => ${to}(${from}(args)))`;
-        case '>': return `((args) => ${to}(${from}(args).flat()))`;
-        case '<': return `((args) => {
-                            const input = ${from}(args);
-                            const output = Array(input.length);
-                            for (let i = 0; i < input.length; i++) {
-                              const arg = input[i];
-                              output[i] = ${to}(Array.isArray(arg) ? arg : [arg])
-                            }; return output;
-                          })`;
+        case '|': return (args: string) => to(from(args));
+        case '>': return (args: string) => to(`${from(args)}.flat()`);
+        case '<': return (args: string) => `
+((args) => {
+  const input = ${from(args)};
+  const output = Array(input.length);
+  for (let i = 0; i < input.length; i++) {
+    const arg = input[i];
+    output[i] = ${to('Array.isArray(arg) ? arg : [arg]')};
+  };
+  return output;
+})(${args})
+        `;
         default: throw new Error(`Invalid operator "${op}"`);
       }
     });
@@ -69,52 +72,50 @@ export class Compiler {
   conditional(node: ParsedNode) {
     const condition = this.expression(node.children[0]);
     
-    const then = !(node.children.length % 2) ? this.expression(node.children[1]) : '(()=>[null])';
-    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : '(()=>[null])';
+    const then = !(node.children.length % 2) ? this.expression(node.children[1]) : () => '[null]';
+    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : () => '[null]';
     
-    return `((args) => ${condition}(args)[0] ? ${then}(args) : ${not}(args))`;
+    return (args: string) => `((args) => ${condition('args')}[0] ? ${then('args')} : ${not('args')})(${args})`;
   }
   
   call(node: ParsedNode) {
     const children = node.children as [Token, ParsedNode?];
     const func = builtins[children[0].value] ? `builtins['${children[0].value}']` : children[0].value;
-    const passed = children[1] ? this.expression(children[1]) : '(()=>[])';
+    const passed = children[1] ? this.expression(children[1]) : () => '[]';
     
-    return `((piped) => ${func}(${passed}(piped).concat(piped)))`;
+    return (args: string) => `((piped) => ${func}(${passed('piped')}.concat(piped)))(${args})`;
   }
 
   list(node: ParsedNode) {
     const expressions = node.children.map(child => this.expression(child));
-    return `((args) => [${expressions.map(expr => `...${expr}(args)`).join(',')}])`;
+    return (args: string) => `((args) => [${expressions.map(expr => `...${expr('args')}`).join(',')}])(${args})`;
   }
 
   array(node: ParsedNode) {
     const expressions = node.children.map(child => this.expression(child));
-    return `((args) => [[${expressions.map(expr => `${expr}(args)`).join(',')}].map(v=>v.length>1?v:v[0])])`;
+    return (args: string) => `((args) => [[${expressions.map(expr => expr('args')).join(',')}].map(v=>v.length>1?v:v[0])])(${args})`;
   }
 
   operator(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
     const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
 
-    return exprs.map(expr => this.expression(expr)).reduce((left, right, i) => `((args) => builtins['${ops[i-1].value}'](${left}(args).concat(${right}(args))))`);
+    return (args: string) => `((args) => ${exprs.map(expr => this.expression(expr)).reduce((left, right, i) => () => `builtins['${ops[i-1].value}'](${left('args')}.concat(${right('args')}))`)()})(${args})`;
   }
 
   string(token: Token) {
-    return `(() => [${JSON.stringify(token.value)}])`;
+    return () => `[${JSON.stringify(token.value)}]`;
   }
 
   number(token: Token) {
-    return `(() => [${token.value}])`;
+    return () => `[${token.value}]`;
   }
 
   regex(token: Token) {
     const regex = token.value;
     const flags = token.flags;
-    return `(() => [${XRegExp(regex, flags).toString()}])`;
+    return () => `[${XRegExp(regex, flags).toString()}]`;
   }
 }
 
-export default function compiler(node: ParsedNode) {
-  return new Compiler().compile(node);
-}
+export default new Compiler();
