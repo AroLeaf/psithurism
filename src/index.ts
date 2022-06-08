@@ -14,7 +14,7 @@ export function parse(tokens: string | Token[]): ParsedNode {
 }
 
 export function compile(AST: string | Token[] | ParsedNode, minified = false): string {
-  if (typeof AST === 'string' || Array.isArray(AST)) return compile(<ParsedNode>parse(AST));
+  if (typeof AST === 'string' || Array.isArray(AST)) return compile(<ParsedNode>parse(AST), minified);
   const js = compiler.compile(<ParsedNode>AST);
   return minified ? minifySync(js).code : js;
 }
