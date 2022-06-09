@@ -58,7 +58,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
     },
   },
   number: /-?(?:\d*\.)?\d+/,
-  break: /[;][\s;]*/s,
+  break: /;[\s;]*/s,
   identifier: /\w+|\S/,
   whitespace: {
     matches: /\s+/s,

@@ -9,7 +9,7 @@
     "dev": "npx ts-node src"
   },
   "bin": {
-    "sidhe": "dist/bin.js"
+    "sidhe": "dist/sidhe.js"
   },
   "license": "MIT",
   "devDependencies": {

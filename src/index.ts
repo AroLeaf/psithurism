@@ -19,4 +19,4 @@ export function compile(AST: string | Token[] | ParsedNode, minified = false): s
   return minified ? minifySync(js).code : js;
 }
 
-if (require.main === module) require('./bin');
+if (require.main === module) require('./sidhe');

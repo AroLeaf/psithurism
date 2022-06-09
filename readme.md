@@ -1,3 +1,3 @@
 # Psithurism
 
-A programming language with <|> pipes.
+A programming language with `|` pipes.

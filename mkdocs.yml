@@ -1,0 +1,51 @@
+site_name: Psithurism
+repo_url: https://github.com/AroLeaf/psithurism
+copyright: Copyright &copy; 2022 <a href="https://leaf.moe" target="_blank">AroLeaf</>
+edit_uri: ''
+docs_dir: docs
+site_dir: docs-site
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: light green
+    accent: light green
+  font:
+    code: Fira Code
+  icon:
+    logo: fontawesome/solid/leaf
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.indexes
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true 
+
+nav:
+  - Psithurism: index.md
+  - Guide:
+    - guide/index.md
+    - Install: guide/install.md
+    - Basics: guide/basics.md
+    - Functions: guide/functions.md
+    - Conditionals: guide/conditionals.md
+    - Builtins: guide/builtins.md
+  - Documentation:
+    - documentation/index.md
