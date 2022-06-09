@@ -303,6 +303,8 @@
         
           
         
+          
+        
       
       
         
@@ -408,6 +410,14 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#other-pipes" class="md-nav__link">
+    Other Pipes
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Pipes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#expand" class="md-nav__link">
     Expand
   </a>
@@ -425,17 +435,15 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#implicit-function-calls" class="md-nav__link">
-    Implicit function calls
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#combining-them" class="md-nav__link">
-    Combining them
+  <a href="#implicit-function-calls" class="md-nav__link">
+    Implicit function calls
   </a>
   
 </li>
@@ -451,6 +459,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conditionals/" class="md-nav__link">
+        Conditionals
+      </a>
     </li>
   
 
@@ -562,6 +584,14 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#other-pipes" class="md-nav__link">
+    Other Pipes
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Pipes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#expand" class="md-nav__link">
     Expand
   </a>
@@ -579,17 +609,15 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#implicit-function-calls" class="md-nav__link">
-    Implicit function calls
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#combining-them" class="md-nav__link">
-    Combining them
+  <a href="#implicit-function-calls" class="md-nav__link">
+    Implicit function calls
   </a>
   
 </li>
@@ -637,12 +665,16 @@
 <p>This improves readability, but you would still need to do things like this:
 <div class="highlight"><pre><span></span><code><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">|</span> <span class="nb">max</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">|</span> <span class="nb">min</span>
 </code></pre></div></p>
+<p>To fix this, you can use parentheses and a pipe in the same function call. The arguments in the parentheses will be passed before the piped arguments:
+<div class="highlight"><pre><span></span><code><span class="n">value</span> <span class="o">|</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">|</span> <span class="nb">min</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+</code></pre></div></p>
+<h3 id="other-pipes">Other Pipes</h3>
 <p>There are two other types of pipes:</p>
-<h3 id="expand">Expand</h3>
+<h4 id="expand">Expand</h4>
 <p>Expand pipes act as a for-each loop over their arguments:
 <div class="highlight"><pre><span></span><code><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="o">&lt;</span> <span class="o">.</span> <span class="c1"># prints each element separately</span>
 </code></pre></div></p>
-<h3 id="merge">Merge</h3>
+<h4 id="merge">Merge</h4>
 <p>Merge pipes flatten their arguments by one level, and return them as arrays:
 <div class="highlight"><pre><span></span><code><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="p">[[</span><span class="mi">5</span><span class="p">]])</span> <span class="o">&gt;</span> <span class="o">=</span> <span class="c1"># [1, 2, 3, 4, [5]]</span>
 </code></pre></div></p>
@@ -651,11 +683,6 @@
 <div class="highlight"><pre><span></span><code><span class="n">greet</span> <span class="s1">&#39;reader&#39;</span>
 </code></pre></div>
 Calling a function with parentheses is actually just this, but with a list literal.</p>
-<h2 id="combining-them">Combining them</h2>
-<p>If you use parentheses and a pipe on the same function, that counts as one function call, with the passed arguments placed before the piped arguments.</p>
-<p>Combining this with implicit calling may improve readability even more:
-<div class="highlight"><pre><span></span><code><span class="n">value</span> <span class="o">|</span> <span class="nb">max</span> <span class="mi">0</span> <span class="o">|</span> <span class="nb">min</span> <span class="mi">100</span>
-</code></pre></div></p>
 <h2 id="operators">Operators</h2>
 <p>Any function can also be used as operator:
 <div class="highlight"><pre><span></span><code><span class="mi">0</span> <span class="nb">max</span> <span class="n">value</span> <span class="nb">min</span> <span class="mi">100</span>
@@ -731,13 +758,13 @@ Calling a function with parentheses is actually just this, but with a list liter
       
       
         
-        <a href="../builtins/" class="md-footer__link md-footer__link--next" aria-label="Next: Builtins" rel="next">
+        <a href="../conditionals/" class="md-footer__link md-footer__link--next" aria-label="Next: Conditionals" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Builtins
+              Conditionals
             </div>
           </div>
           <div class="md-footer__button md-icon">
