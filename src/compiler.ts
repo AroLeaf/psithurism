@@ -57,10 +57,13 @@ export class Compiler {
 ((args) => {
   const input = ${from(args)};
   const output = Array(input.length);
+  const _i = globalThis.i;
   for (let i = 0; i < input.length; i++) {
     const arg = input[i];
+    globalThis.i = i;
     output[i] = ${to('Array.isArray(arg) ? arg : [arg]')};
   };
+  globalThis.i = _i;
   return output;
 })(${args})
         `;
@@ -83,7 +86,7 @@ export class Compiler {
     const func = builtins[children[0].value] ? `builtins['${children[0].value}']` : children[0].value;
     const passed = children[1] ? this.expression(children[1]) : () => '[]';
     
-    return (args: string) => `((piped) => ${func}(${passed('piped')}.concat(piped)))(${args})`;
+    return (args: string) => `((piped) => ${func}(${passed('piped')}, piped))(${args})`;
   }
 
   list(node: ParsedNode) {
@@ -93,14 +96,14 @@ export class Compiler {
 
   array(node: ParsedNode) {
     const expressions = node.children.map(child => this.expression(child));
-    return (args: string) => `((args) => [[${expressions.map(expr => expr('args')).join(',')}].map(v=>v.length>1?v:v[0])])(${args})`;
+    return (args: string) => `((args) => [[${expressions.map(expr => `...${expr('args')}`).join(',')}]])(${args})`;
   }
-
+  
   operator(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
     const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
 
-    return (args: string) => `((args) => ${exprs.map(expr => this.expression(expr)).reduce((left, right, i) => () => `builtins['${ops[i-1].value}'](${left('args')}.concat(${right('args')}))`)()})(${args})`;
+    return (args: string) => `((args) => ${exprs.map(expr => this.expression(expr)).reduce((left, right, i) => () => `builtins['${ops[i-1].value}'](${left('args')}.concat(${right('args')}),[])`)()})(${args})`;
   }
 
   string(token: Token) {

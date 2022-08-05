@@ -35,7 +35,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   mul: '*',
   div: '/',
   mod: '%',
-  pow: '^',
+  pow: 'ə',
   string: {
     matches: /'(?:[^'\\]|\\[^])*'|"(?:[^"\\]|\\[^])*"/s,
     then: t => t.value = t.value.slice(1,-1).replace(/\\([^])/g, sub => {
@@ -51,15 +51,14 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
     }),
   },
   regex: {
-    matches: /\/((?:[^\/\\\n]|\\[^])*)\/([gimuynsxA]*)/s,
+    matches: /`((?:[^\`\\]|\\[^])*)`([gimuynsxA]*)/s,
     then: (t, m) => {
-      t.value.replaceAll('\\\n', '\n');
       t.flags = m[2];
     },
   },
-  number: /-?(?:\d*\.)?\d+/,
+  number: /(?:\d*\.)?\d+(?:e-?\d+)?/,
   break: /;[\s;]*/s,
-  identifier: /\w+|\S/,
+  identifier: /[a-zA-Z]+|\S/,
   whitespace: {
     matches: /\s+/s,
     discard: true,

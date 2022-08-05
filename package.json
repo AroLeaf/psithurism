@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "npx swc src -d dist",
-    "dev": "npx ts-node src"
+    "dev": "bun run build && node dist"
   },
   "bin": {
     "sidhe": "dist/sidhe.js"

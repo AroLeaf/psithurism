@@ -104,14 +104,21 @@ operator.is(ctx => {
 });
 
 call.is(ctx => {
-  if (ctx.accept(
+  let f: Token;
+  if (f = ctx.accept(
     'identifier',
     'pow',
     'mul', 'div', 'mod',
     'add', 'sub',
-    'assign'
+    'assign', 'lambda'
   )) {
-    if (ctx.assert('parens_open')) ctx.expect(list);
+    if (['add', 'sub'].includes(f.type) && ctx.assert('number')) {
+      const num = ctx.expect('number');
+      num.raw = f.raw + num.raw;
+      num.value = f.value + num.value;
+      return num;
+    }
+    ctx.accept(literal);
   } else return ctx.expect(literal);
   return;
 });
