@@ -29,18 +29,22 @@ This should print the version of psithurism you installed.
 
 ### Usage
 ```
-Usage: sidhe [options] [command]
+usage: sidhe <command> [...flags] [...args]
 
-compiles and runs psithurism scripts
+sidhe compile [...flags] <in> [out]
+  compile a psithurism script to JS
 
-Options:
-  -V, --version             output the version number
-  -h, --help                display help for command
+sidhe run [...flags] <in> [...argv]
+  run a psithurism script directly
+  
+flags
+  -r/--raw    : treat <in> as code instead of filepath
+  -m/--minify : minify the resulting code when compiling
 
-Commands:
-  compile [options] <file>  compile a psithurism script
-  run [options] <file>      run a compiled script
-  help [command]            display help for command
+args
+  in    : script source, filepath or code (requires -r to be set)
+  out   : compiled script location, filepath, stdout when not provided
+  argv  : the arguments passed to the script, as JSON strings
 ```
 
 To view this information in your shell, run:

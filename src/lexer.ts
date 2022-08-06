@@ -20,9 +20,9 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
     discard: true,
   },
   pipe: '|',
-  expand: '<',
-  merge: '>',
-  assign: '=',
+  expand: '≺',
+  merge: '≻',
+  assign: '≔',
   separator: ',',
   then: '?',
   else: ':',
@@ -76,4 +76,3 @@ for (const [name, options] of Object.entries(tokens)) {
 }
 
 export { lexer as default };
-

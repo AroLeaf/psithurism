@@ -10,9 +10,9 @@ const assignment = new Node('assignment');
 
 const pipe = new Node('pipe');
 const conditional = new Node('conditional');
-const mulOrDiv = new Node('mul_or_div');
-const addOrSub = new Node('add_or_sub');
-const power = new Node('power');
+const mulOrDiv = new Node('operator');
+const addOrSub = new Node('operator');
+const power = new Node('operator');
 const operator = new Node('operator');
 const call = new Node('call');
 const list = new Node('list');
@@ -21,16 +21,15 @@ const array = new Node('array');
 const literal = new Node('literal');
 
 program.is(ctx => {
-  ctx.expect(assignment);
+  ctx.expect(assignment, pipe);
   while(ctx.next()) {
     ctx.discard('break');
-    ctx.expect(assignment);
+    ctx.expect(assignment, pipe);
   }
   ctx.ignore('break');
 });
 
 assignment.is(ctx => {
-  if (ctx.next()?.type !== 'assign') return ctx.expect(pipe);
   ctx.expect('identifier');
   ctx.discard('assign');
   ctx.expect(pipe);

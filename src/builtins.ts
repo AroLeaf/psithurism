@@ -2,6 +2,7 @@ import XRegExp from 'xregexp';
 
 declare global {
   var i: number|undefined
+  var $: any[]
 }
 
 function vectorize(args: any[], callback: Function): [any] {
@@ -28,7 +29,8 @@ function vectorize(args: any[], callback: Function): [any] {
 
 
 const builtins: { [key: string]: Function } = {
-  '=': (passed: any[], piped: any[]): any[] => passed.concat(piped),
+  '_': (passed: any[], piped: any[]): any[] => passed.concat(piped),
+  '$': (passed: any[]): any[] => typeof passed[0] === 'number' ? [globalThis.$[passed[0]]] : globalThis.$,
   
   '›': (passed: any[], piped: any[]): any[] =>
     piped.length
@@ -198,7 +200,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '%': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '%': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) return a;
 
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
@@ -228,7 +230,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  'ə': (passed: any[], piped: any[], args = passed.concat(piped)): [any]|any[] => vectorize(args.reverse(), (a: any, v: any) => {
+  'ə': (passed: any[], piped: any[], args = piped.concat(passed)): [any]|any[] => vectorize(args.reverse(), (a: any, v: any) => {
     if (args.length < 2) return a;
 
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
@@ -249,8 +251,8 @@ const builtins: { [key: string]: Function } = {
   }),
   
   
-  '∨': (passed: any[], piped: any[]): [any] => [passed.concat(piped).reduce((a,v)=>a||v)],
-  '∧': (passed: any[], piped: any[]): [any] => [passed.concat(piped).reduce((a,v)=>a&&v)],
+  '∨': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a || v),
+  '∧': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a && v),
 
   '⊻': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {    
     if (args.length < 2) return !!a;
@@ -272,12 +274,8 @@ const builtins: { [key: string]: Function } = {
 
       case 'number,number': return a & v;
       
-      case 'number,string':
-      case 'string,number': {
-        const s = typeof a === 'string' ? a : v;
-        const n = typeof a === 'number' ? a : v;
-        return Array.from({ length: Math.ceil(s.length / n) }, (_,i) => s[i*n]).join('');
-      }
+      case 'number,string': return Array.from({ length: Math.ceil(v.length / a) }, (_,i) => v[i*a]).join('');
+      case 'string,number': return Array.from({ length: Math.ceil(a.length / v) }, (_,i) => a[i*v]).join('');
 
       case 'string,string': return [...new Set(a + v)].map(c => (<string>c).repeat(Math.min([...a].reduce((a, v) => v === c ? a + 1 : a, 0), [...v].reduce((a, v) => v === c ? a + 1 : a, 0)))).join('');
 
@@ -311,12 +309,8 @@ const builtins: { [key: string]: Function } = {
 
       case 'number,number': return a ^ v;
 
-      case 'number,string':
-      case 'string,number': {
-        const s = typeof a === 'string' ? a : v;
-        const n = typeof a === 'number' ? a : v;
-        return Array.from({ length: Math.ceil(s.length / n) }, (_,i) => s.slice(i*n, i*n + n-1)).join('');
-      }
+      case 'number,string': return Array.from({ length: Math.ceil(v.length / a) }, (_,i) => v.slice(i*a, i*a + a-1)).join('');
+      case 'string,number': return Array.from({ length: Math.ceil(a.length / v) }, (_,i) => v.slice(i*v, i*v + v-1)).join('');
 
       case 'string,string': return [...new Set(a + v)].map(c => (<string>c).repeat(Math.abs([...a].reduce((a, v) => v === c ? a + 1 : a, 0) - [...v].reduce((a, v) => v === c ? a + 1 : a, 0)))).join('');
       
@@ -324,7 +318,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '«': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '«': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -339,7 +333,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '»': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '»': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     
     switch (types) {
@@ -354,7 +348,217 @@ const builtins: { [key: string]: Function } = {
       default: return null;
     }
   }),
-  
+
+
+  '=': (passed: any[], piped: any[], args = passed.concat(piped)): [boolean] => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;
+    switch (types) {
+      case 'string,string':
+      case 'number,number': return a === v;
+
+      case 'array,array'  : return a.every((e: any, i: number) => v[i] === e);
+
+      default: return false;
+    }
+  })],
+
+  '≈': (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,number': return a === v;
+      
+      case 'string,string': {
+        if (a.length !== v.length) return false;
+        const _a = [...a].sort();
+        const _v = [...v].sort();
+        return _a.every((c: string, i: number) => _v[i] === c);
+      }
+
+      case 'number,string': return a.toString() === v;
+      case 'string,number': return a === v.toString();
+
+      case 'array,string' :
+      case 'array,number' : return a.every((e: any) => e === v);
+      
+      case 'string,array' :
+      case 'number,array' : return v.every((e: any) => e === a);
+
+      case 'array,array'  : {
+        if (a.length !== v.length) return false;
+        const _a = [...a].sort((a: any, b: any) => a>b ? 1 : a<b ? -1 : 0);
+        const _v = [...v].sort((a: any, b: any) => a>b ? 1 : a<b ? -1 : 0);
+        return _a.every((e: any, i: number) => _v[i] === e);
+      }
+
+      default: return false;
+    }
+  })],
+
+  '≠': () => (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,number':
+      case 'string,string': return a !== v;
+
+      case 'array,array'  : return a.some((e: any, i: number) => v[i] !== e);
+
+      default: return true;
+    }
+  })],
+
+  '≉': () => (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,number': return a === v;
+      
+      case 'string,string': {
+        if (a.length !== v.length) return true;
+        const _a = [...a].sort();
+        const _v = [...v].sort();
+        return _a.some((c: string, i: number) => _v[i] !== c);
+      }
+
+      case 'number,string': return a.toString() !== v;
+      case 'string,number': return a !== v.toString();
+
+      case 'array,string':
+      case 'array,number': return a.some((e: any) => e !== v);
+      
+      case 'string,array':
+      case 'number,array': return v.some((e: any) => e !== a);
+
+      case 'array,array': {
+        if (a.length !== v.length) return true;
+        const _a = [...a].sort((a: any, b: any) => a>b ? 1 : a<b ? -1 : 0);
+        const _v = [...v].sort((a: any, b: any) => a>b ? 1 : a<b ? -1 : 0);
+        return _a.some((e: any, i: number) => _v[i] !== e);
+      }
+
+      default: return true;
+    }
+  })],
+
+  '>': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,null'  : return a > 0;
+      case 'null,number'  : return 0 > v;
+      case 'string,null'  : return a.length > 0;
+      case 'null,string'  : return false;
+
+      case 'number,number':
+      case 'number,string':
+      case 'string,number':
+      case 'string,string': return a > v;
+
+
+      case 'array,string':
+      case 'array,number': return a.every((e: any) => builtins['>']([e, v]));
+      
+      case 'string,array':
+      case 'number,array': return v.every((e: any) => builtins['>']([e, a]));
+
+      case 'array,array': return a.length > v.length 
+        ? a.every((e: any, i: number) => builtins['>']([e, v[i]]))
+        : v.every((e: any, i: number) => builtins['>']([e, a[i]]));
+
+      default: return null;
+    }
+  })],
+
+  '≥': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,null'  : return a >= 0;
+      case 'null,number'  : return 0 >= v;
+      case 'string,null'  : return true;
+      case 'null,string'  : return a.length <= 0;
+
+      case 'number,number':
+      case 'number,string':
+      case 'string,number':
+      case 'string,string': return a >= v;
+
+
+      case 'array,string':
+      case 'array,number': return a.every((e: any) => builtins['≥']([e, v]));
+      
+      case 'string,array':
+      case 'number,array': return v.every((e: any) => builtins['≥']([e, a]));
+
+      case 'array,array': return a.length > v.length 
+        ? a.every((e: any, i: number) => builtins['≥']([e, v[i]]))
+        : v.every((e: any, i: number) => builtins['≥']([e, a[i]]));
+
+      default: return null;
+    }
+  })],
+
+  '<': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,null'  : return a < 0;
+      case 'null,number'  : return 0 < v;
+      case 'string,null'  : return false;
+      case 'null,string'  : return a.length > 0;
+
+      case 'number,number':
+      case 'number,string':
+      case 'string,number':
+      case 'string,string': return a < v;
+
+
+      case 'array,string':
+      case 'array,number': return a.every((e: any) => builtins['<']([e, v]));
+      
+      case 'string,array':
+      case 'number,array': return v.every((e: any) => builtins['<']([e, a]));
+
+      case 'array,array': return a.length > v.length 
+        ? a.every((e: any, i: number) => builtins['<']([e, v[i]]))
+        : v.every((e: any, i: number) => builtins['<']([e, a[i]]));
+
+      default: return null;
+    }
+  })],
+
+  '≤': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+    const v = args[i+1];
+    const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
+    switch (types) {
+      case 'number,null'  : return a <= 0;
+      case 'null,number'  : return 0 <= v;
+      case 'string,null'  : return a.length <= 0;
+      case 'null,string'  : return true;
+
+      case 'number,number':
+      case 'number,string':
+      case 'string,number':
+      case 'string,string': return a <= v;
+
+
+      case 'array,string':
+      case 'array,number': return a.every((e: any) => builtins['≤']([e, v]));
+      
+      case 'string,array':
+      case 'number,array': return v.every((e: any) => builtins['≤']([e, a]));
+
+      case 'array,array': return a.length > v.length 
+        ? a.every((e: any, i: number) => builtins['≤']([e, v[i]]))
+        : v.every((e: any, i: number) => builtins['≤']([e, a[i]]));
+
+      default: return null;
+    }
+  })],
+
+
 
   true: (): [boolean] => [true],
   false: (): [boolean] => [false],
@@ -362,5 +566,6 @@ const builtins: { [key: string]: Function } = {
 }
 
 
-export { builtins };
+const location = __dirname;
+export { builtins, location };
 

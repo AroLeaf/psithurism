@@ -3,13 +3,17 @@ import { builtins } from './builtins';
 import { Token } from '@aroleaf/parser';
 import XRegExp from 'xregexp';
 
+export interface CompilerOptions {
+  builtinsPath?: string
+}
+
 export class Compiler {
-  compile(node: ParsedNode) {
+  compile(program: ParsedNode, options: CompilerOptions = {}) {
     const functions: { [key: string]: Function } = {};
     const expressions: Function[] = [];
 
-    const assignments = node.children.filter(child => child.type === 'assignment') as ParsedNode[];
-    const statements = node.children.filter(child => child.type !== 'assignment') as ParsedNode[];
+    const assignments = program.children.filter(child => child.type === 'assignment') as ParsedNode[];
+    const statements = program.children.filter(child => child.type !== 'assignment') as ParsedNode[];
     
     for (const func of assignments) {
       const name = (<Token>func.children[0]).value;
@@ -23,7 +27,7 @@ export class Compiler {
       expressions.push(expression);
     }
 
-    return `${Object.entries(functions).map(([name, func]) => `const ${name}=((args) => ${func('args')})`).join(';')};module.exports=(args)=>${expressions.reduce((a,v) => v(a), 'args')};if (process.argv[1]?process.argv[1]==__filename:true) module.exports(process.argv.slice(2));`;
+    return `${options.builtinsPath ? `const builtins = require('${options.builtinsPath}').builtins;` : ''}${Object.entries(functions).map(([name, func]) => `const ${name}=((args) => ${func('args')});`).join('')}module.exports=(args)=>{globalThis.$ = args;return ${expressions.reduce((a,v) => v(a), 'args')}};if (require('path').resolve(process.argv[1])==__filename) module.exports(process.argv.slice(2));`;
   }
   
   expression(expr: ParsedNode|Token): Function {
@@ -31,10 +35,7 @@ export class Compiler {
       case 'pipe': return this.pipe(<ParsedNode>expr);
       case 'conditional': return this.conditional(<ParsedNode>expr);
       case 'call': return this.call(<ParsedNode>expr);
-      case 'operator':
-      case 'add_or_sub':
-      case 'mul_or_div':
-      case 'power': return this.operator(<ParsedNode>expr);
+      case 'operator': return this.operator(<ParsedNode>expr);
       case 'string': return this.string(<Token>expr);
       case 'number': return this.number(<Token>expr);
       case 'regex': return this.regex(<Token>expr);
@@ -52,8 +53,8 @@ export class Compiler {
       const op = ops[i-1].value;
       switch (op) {
         case '|': return (args: string) => to(from(args));
-        case '>': return (args: string) => to(`${from(args)}.flat()`);
-        case '<': return (args: string) => `
+        case '≻': return (args: string) => to(`${from(args)}.flat()`);
+        case '≺': return (args: string) => `
 ((args) => {
   const input = ${from(args)};
   const output = Array(input.length);
@@ -66,7 +67,7 @@ export class Compiler {
   globalThis.i = _i;
   return output;
 })(${args})
-        `;
+        `.slice(1);
         default: throw new Error(`Invalid operator "${op}"`);
       }
     });

@@ -12,6 +12,15 @@
     "sidhe": "dist/sidhe.js"
   },
   "license": "MIT",
+  "author": {
+    "name": "Leaf",
+    "url": "https://leaf.moe"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AroLeaf/psithurism.git"
+  },
+  "homepage": "https://github.com/AroLeaf/psithurism#readme",
   "devDependencies": {
     "@aroleaf/tsconfig": "^1.0.0",
     "@swc/cli": "^0.1.57",
@@ -22,7 +31,6 @@
     "@aroleaf/parser": "^2.2.3",
     "@swc/core": "^1.2.197",
     "@swc/helpers": "^0.3.17",
-    "commander": "^9.3.0",
     "xregexp": "^5.1.0"
   },
   "files": [
