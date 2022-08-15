@@ -301,10 +301,6 @@
         
           
         
-          
-        
-          
-        
       
       
         
@@ -381,13 +377,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#comments" class="md-nav__link">
-    Comments
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#literals" class="md-nav__link">
     Literals
   </a>
@@ -396,8 +385,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#strings" class="md-nav__link">
-    Strings
+  <a href="#string" class="md-nav__link">
+    String
   </a>
   
 </li>
@@ -416,9 +405,29 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
-  <a href="#regex" class="md-nav__link">
-    Regex
+  <a href="#calling-functions" class="md-nav__link">
+    Calling functions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-custom-functions" class="md-nav__link">
+    Defining custom functions
   </a>
   
 </li>
@@ -443,36 +452,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../functions/" class="md-nav__link">
-        Functions
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../conditionals/" class="md-nav__link">
-        Conditionals
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../builtins/" class="md-nav__link">
-        Builtins
+      <a href="../pipes/" class="md-nav__link">
+        Pipes
       </a>
     </li>
   
@@ -556,13 +537,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#comments" class="md-nav__link">
-    Comments
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#literals" class="md-nav__link">
     Literals
   </a>
@@ -571,8 +545,8 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#strings" class="md-nav__link">
-    Strings
+  <a href="#string" class="md-nav__link">
+    String
   </a>
   
 </li>
@@ -591,9 +565,29 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#functions" class="md-nav__link">
+    Functions
+  </a>
+  
+    <nav class="md-nav" aria-label="Functions">
+      <ul class="md-nav__list">
+        
           <li class="md-nav__item">
-  <a href="#regex" class="md-nav__link">
-    Regex
+  <a href="#calling-functions" class="md-nav__link">
+    Calling functions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-custom-functions" class="md-nav__link">
+    Defining custom functions
   </a>
   
 </li>
@@ -618,68 +612,68 @@
 
 
 <h1 id="basics">Basics</h1>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>The example code blocks in this guide may not be valid scripts</p>
-</div>
-<h2 id="comments">Comments</h2>
-<p>Comments are written with a <code>#</code>:
-<div class="highlight"><pre><span></span><code><span class="c1"># this does nothing</span>
-</code></pre></div></p>
 <h2 id="literals">Literals</h2>
-<p>There's a few types of literals in psithurism:</p>
-<h3 id="strings">Strings</h3>
-<p>Strings are written between pairs of either double or single quotes.
-<div class="highlight"><pre><span></span><code><span class="s1">&#39;Hello&#39;</span>
-<span class="s2">&quot;reader&quot;</span>
-</code></pre></div></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Single quotes</label><label for="__tabbed_1_2">Double quotes</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>A single quoted string is assumed to be encoded according to psithurism's codepage.
-<div class="highlight"><pre><span></span><code><span class="s1">&#39;∨&#39;</span> <span class="c1"># one byte</span>
-</code></pre></div></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Since there currently is no actual codepage, single and double quoted stings are both assumed to be UTF-8.</p>
-</div>
-</div>
-<div class="tabbed-block">
-<p>A double quoted string is assumed to be UTF-8.
-<div class="highlight"><pre><span></span><code><span class="s2">&quot;∨&quot;</span> <span class="c1"># three bytes</span>
-</code></pre></div></p>
-</div>
-</div>
-</div>
+<h3 id="string">String</h3>
+<p>Strings are between pairs of single or double quotes:</p>
+<div class="highlight"><pre><span></span><code><span class="s1">&#39;Hello,&#39;</span>
+<span class="s2">&quot;World!&quot;</span>
+<span class="s1">&#39;I</span><span class="se">\&#39;</span><span class="s1">m a string!&#39;</span>
+</code></pre></div>
 <h3 id="numbers">Numbers</h3>
-<p>Numbers are pretty straightforward:
+<p>Numbers are simple too:</p>
 <div class="highlight"><pre><span></span><code><span class="mi">7</span>
 <span class="mf">2.5</span>
 <span class="mf">.125</span>
 <span class="o">-</span><span class="mf">4.9</span>
+<span class="mf">3e333</span>
 </code></pre></div>
-This is not allowed however:
-<div class="highlight"><pre><span></span><code><span class="mf">3.</span>
-</code></pre></div></p>
 <h3 id="lists-arrays">Lists &amp; Arrays</h3>
 <p>Lists and arrays are similar, but not quite the same.</p>
-<p>List items are expanded into separate arguments of the next function in the chain.
-This means nesting lists has no effect. A list is written between parentheses:
+<p>Lists are flattened recursively. This means nesting lists has no effect. A list is written between parentheses:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># these are the same</span>
 <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-</code></pre></div></p>
-<p>The whole array is passed to the next function as one argument.
-This also allows for nested arrays. An array is written between square brackets:
+</code></pre></div>
+<p>Arrays are not flattened. This allows for nested arrays. An array is written between square brackets:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># these are not the same</span>
 <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
 <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]]</span>
-</code></pre></div></p>
-<h3 id="regex">Regex</h3>
-<p>Just like javascript, psithurism has regex literals:
-<div class="highlight"><pre><span></span><code><span class="sr">/\/((?:[^\/\\\n]|\\[^])*)\/([gimuynsxA]*)/s</span><span class="w"></span>
 </code></pre></div>
-Psithurism uses xregexp for parsing and executing regex. Check its <a href="https://xregexp.com">website</a> for more information.</p>
+<h2 id="functions">Functions</h2>
+<p>In psithurism, everything is a function.</p>
+<div class="highlight"><pre><span></span><code><span class="s1">&#39;hello!&#39;</span>  <span class="c1"># function</span>
+<span class="o">&lt;</span><span class="mi">10</span>       <span class="c1"># function</span>
+<span class="n">_</span>         <span class="c1"># function</span>
+<span class="n">myFunc</span><span class="p">()</span>  <span class="c1"># function (sort of)</span>
+<span class="mi">1</span><span class="o">~</span><span class="mi">101</span><span class="err">≺∨</span><span class="p">((</span><span class="o">%</span><span class="mi">3</span><span class="err">?</span><span class="p">:</span><span class="s1">&#39;Fizz&#39;</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="o">%</span><span class="mi">5</span><span class="err">?</span><span class="p">:</span><span class="s1">&#39;Buzz&#39;</span><span class="p">))</span><span class="err">≻…</span>  <span class="c1"># function</span>
+</code></pre></div>
+<p>This makes psithurism a very flexible language, since everything fits almost everywhere.</p>
+<h3 id="calling-functions">Calling functions</h3>
+<p>The main way of calling a function is using pipes:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># `…` pretty-prints its arguments</span>
+<span class="s1">&#39;Hello, World!&#39;</span> <span class="o">|</span> <span class="err">…</span>
+</code></pre></div>
+<p>You can also call a function with a single argument directly, if the argument is a literal, and the function is not:</p>
+<div class="highlight"><pre><span></span><code><span class="err">…</span><span class="s1">&#39;🍃&#39;</span>
+<span class="o">+</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span> <span class="c1"># remember, lists are literals</span>
+</code></pre></div>
+<p>A function called with a literal still takes its piped arguments as arguments:</p>
+<div class="highlight"><pre><span></span><code><span class="mi">5</span><span class="o">|+</span><span class="mi">5</span>  <span class="c1"># 10</span>
+</code></pre></div>
+<p>The third way to call a function is as operator. This can again not be done with a literal as operator:</p>
+<div class="highlight"><pre><span></span><code><span class="mi">5</span><span class="o">+</span><span class="mi">5</span>
+<span class="mi">4</span><span class="o">+</span><span class="mi">3</span><span class="o">*</span><span class="mi">6</span> <span class="c1"># math operators keep their precedence, this is 4+(3*6)</span>
+<span class="mi">7</span><span class="n">ə2</span>   <span class="c1"># 7 to the 2nd power</span>
+</code></pre></div>
+<h3 id="defining-custom-functions">Defining custom functions</h3>
+<p>Functions are defined using <code>≔</code>:
+<div class="highlight"><pre><span></span><code><span class="n">greet</span> <span class="err">≔</span> <span class="s1">&#39;Hello, &#39;</span> <span class="o">+</span> <span class="n">_</span> <span class="o">+</span> <span class="s1">&#39;!&#39;</span><span class="p">;</span>
+<span class="n">greet</span><span class="p">(</span><span class="s1">&#39;reader&#39;</span><span class="p">)</span> <span class="c1"># &#39;Hello, reader!&#39;</span>
+</code></pre></div></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Calling a user-defined function treats all its arguments as piped arugments, putting arugments that are actually passed to it before those actually piped to it.</p>
+</div>
 
               
             </article>
@@ -716,13 +710,13 @@ Psithurism uses xregexp for parsing and executing regex. Check its <a href="http
       
       
         
-        <a href="../functions/" class="md-footer__link md-footer__link--next" aria-label="Next: Functions" rel="next">
+        <a href="../pipes/" class="md-footer__link md-footer__link--next" aria-label="Next: Pipes" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Functions
+              Pipes
             </div>
           </div>
           <div class="md-footer__button md-icon">

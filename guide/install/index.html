@@ -301,10 +301,6 @@
         
           
         
-          
-        
-          
-        
       
       
         
@@ -415,36 +411,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../functions/" class="md-nav__link">
-        Functions
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../conditionals/" class="md-nav__link">
-        Conditionals
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../builtins/" class="md-nav__link">
-        Builtins
+      <a href="../pipes/" class="md-nav__link">
+        Pipes
       </a>
     </li>
   
@@ -565,21 +533,28 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Global</label><label for="__tabbed_1_2">Local</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>To install psithurism globally, run the following command on a system with nodejs:
+<p>To install psithurism globally, run the following command on a system with <a href="https://nodejs.org/">Node.js</a>:
 <div class="highlight"><pre><span></span><code>npm i -g psithurism
+</code></pre></div>
+Or the following on a system with <a href="https://bun.sh/">Bun</a>:
+<div class="highlight"><pre><span></span><code>bun add -g psithurism
 </code></pre></div></p>
 </div>
 <div class="tabbed-block">
-<p>To install psithurism locally, run the following command in a nodejs project:
+<p>To install psithurism locally, run the following command in a <a href="https://nodejs.org/">Node.js</a> project:
 <div class="highlight"><pre><span></span><code>npm i psithurism
+</code></pre></div>
+Or the following in a <a href="https://bun.sh/">Bun</a> project:
+<div class="highlight"><pre><span></span><code>bun add psithurism
 </code></pre></div></p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>You will need to replace <code>sidhe</code> in commands with <code>npx sidhe</code>.</p>
+<p>When using Node.js, you will need to replace <code>sidhe</code> in commands with <code>npx sidhe</code>. Invoking sidhe from the command line in a Bun project is currently not supported.</p>
 </div>
 </div>
 </div>
 </div>
+<hr />
 <p>To verify you installed psithurism correctly, run:
 <div class="highlight"><pre><span></span><code>sidhe --version
 </code></pre></div>
@@ -588,18 +563,22 @@ This should print the version of psithurism you installed.</p>
 <h2 id="sidhe">Sidhe</h2>
 <p><code>sidhe</code> is a CLI program bundled with psithurism that can compile and run your scripts.</p>
 <h3 id="usage">Usage</h3>
-<div class="highlight"><pre><span></span><code>Usage: sidhe [options] [command]
+<div class="highlight"><pre><span></span><code>usage: sidhe &lt;command&gt; [...flags] [...args]
 
-compiles and runs psithurism scripts
+sidhe compile [...flags] &lt;in&gt; [out]
+  compile a psithurism script to JS
 
-Options:
-  -V, --version             output the version number
-  -h, --help                display help for command
+sidhe run [...flags] &lt;in&gt; [...argv]
+  run a psithurism script directly
 
-Commands:
-  compile [options] &lt;file&gt;  compile a psithurism script
-  run [options] &lt;file&gt;      run a compiled script
-  help [command]            display help for command
+flags
+  -r/--raw    : treat &lt;in&gt; as code instead of filepath
+  -m/--minify : minify the resulting code when compiling
+
+args
+  in    : script source, filepath or code (requires -r to be set)
+  out   : compiled script location, filepath, stdout when not provided
+  argv  : the arguments passed to the script, as JSON strings
 </code></pre></div>
 <p>To view this information in your shell, run:
 <div class="highlight"><pre><span></span><code>sidhe --help
