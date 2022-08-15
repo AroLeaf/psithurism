@@ -568,4 +568,3 @@ const builtins: { [key: string]: Function } = {
 
 const location = __dirname;
 export { builtins, location };
-

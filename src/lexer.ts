@@ -52,9 +52,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   },
   regex: {
     matches: /`((?:[^\`\\]|\\[^])*)`([gimuynsxA]*)/s,
-    then: (t, m) => {
-      t.flags = m[2];
-    },
+    then: (t, m) => t.flags = m[2],
   },
   number: /(?:\d*\.)?\d+(?:e-?\d+)?/,
   break: /;[\s;]*/s,

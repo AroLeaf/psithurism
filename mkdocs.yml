@@ -44,8 +44,6 @@ nav:
     - guide/index.md
     - Install: guide/install.md
     - Basics: guide/basics.md
-    - Functions: guide/functions.md
-    - Conditionals: guide/conditionals.md
-    - Builtins: guide/builtins.md
+    - Pipes: guide/pipes.md
   - Documentation:
     - documentation/index.md

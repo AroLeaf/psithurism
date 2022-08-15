@@ -27,7 +27,7 @@ export class Compiler {
       expressions.push(expression);
     }
 
-    return `${options.builtinsPath ? `const builtins = require('${options.builtinsPath}').builtins;` : ''}${Object.entries(functions).map(([name, func]) => `const ${name}=((args) => ${func('args')});`).join('')}module.exports=(args)=>{globalThis.$ = args;return ${expressions.reduce((a,v) => v(a), 'args')}};if (require('path').resolve(process.argv[1])==__filename) module.exports(process.argv.slice(2));`;
+    return `${options.builtinsPath ? `const builtins = require('${options.builtinsPath}').builtins;` : ''}${Object.entries(functions).map(([name, func]) => `const ${name}=((passed, piped, args = passed.concat(piped)) => ${func('args')});`).join('')}module.exports=(args)=>{globalThis.$ = args;return ${expressions.reduce((a,v) => v(a), 'args')}};if (require('path').resolve(process.argv[1])==__filename) module.exports(process.argv.slice(2));`;
   }
   
   expression(expr: ParsedNode|Token): Function {

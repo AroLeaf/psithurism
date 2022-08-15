@@ -109,7 +109,7 @@ call.is(ctx => {
     'pow',
     'mul', 'div', 'mod',
     'add', 'sub',
-    'assign', 'lambda'
+    'lambda'
   )) {
     if (['add', 'sub'].includes(f.type) && ctx.assert('number')) {
       const num = ctx.expect('number');
