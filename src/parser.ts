@@ -1,33 +1,34 @@
 import { Node, Token } from '@aroleaf/parser';
 
+declare module '@aroleaf/parser' {
+  interface ParserContext {
+    opLevel?: number
+  }
+}
+
 export interface ParsedNode {
   type: string
   children: (ParsedNode | Token)[]
 }
 
+
 const program = new Node('program');
 const assignment = new Node('assignment');
-
 const pipe = new Node('pipe');
 const conditional = new Node('conditional');
-const mulOrDiv = new Node('operator');
-const addOrSub = new Node('operator');
-const power = new Node('operator');
-const operator = new Node('operator');
 const call = new Node('call');
 const list = new Node('list');
 const array = new Node('array');
-
 const literal = new Node('literal');
 
+
 program.is(ctx => {
-  ctx.expect(assignment, pipe);
-  while(ctx.next()) {
-    ctx.discard('break');
+  while(ctx.current()) {
     ctx.expect(assignment, pipe);
+    if (ctx.current()) ctx.discard('break');
   }
-  ctx.ignore('break');
 });
+
 
 assignment.is(ctx => {
   ctx.expect('identifier');
@@ -48,8 +49,9 @@ pipe.is(ctx => {
   return left;
 });
 
+
 conditional.is(ctx => {
-  const expr = ctx.expect(addOrSub);
+  const expr = ctx.expect(operator[0]);
   if(ctx.ignore('then')) {
     ctx.accept(conditional);
     if (ctx.accept('else')) ctx.expect(conditional);
@@ -58,61 +60,49 @@ conditional.is(ctx => {
   return expr;
 });
 
-addOrSub.is(ctx => {
-  const left = ctx.expect(mulOrDiv);
-  if (ctx.assert('add') || ctx.assert('sub')) {
-    while (ctx.accept('add', 'sub')) {
-      ctx.expect(mulOrDiv);
-    }
-    return;
-  }
-  return left;
-});
 
-mulOrDiv.is(ctx => {
-  const left = ctx.expect(power);
-  if (ctx.assert('mul') || ctx.assert('div') || ctx.assert('mod')) {
-    while (ctx.accept('mul', 'div', 'mod')) {
-      ctx.expect(power);
-    }
-    return;
-  }
-  return left;
-});
+const opLevels = [
+  ['≔'],
+  ['∨'], ['⊻'], ['∧'],
+  ['‖'], ['^'], ['&'],
+  ['=', '≈', '≠', '≉'],
+  ['>', '<', '≥', '≤'],
+  ['«', '»'],
+  ['+', '-'],
+  ['*', '/', '%'],
+  ['ə'],
+];
 
-power.is(ctx => {
-  const left = ctx.expect(operator);
-  if (ctx.assert('pow')) {
-    while (ctx.accept('pow')) {
-      ctx.expect(operator);
+const operator = opLevels
+  .map((ops, i) => new Node('operator', ctx => {
+    const left = ctx.expect(operator[i + 1]);
+    const filter = (t: Token) => ops.includes(t.value);
+    if (ctx.assert(filter)) {
+      while (ctx.accept(filter)) {
+        ctx.expect(operator[i + 1]);
+      }
+      return;
     }
-    return;
-  }
-  return left;
-});
+    return left;
+  }))
+  .concat(new Node('operator', ctx => {
+    const left = ctx.expect(call);
+    const filter = (t: Token) => t.type === 'identifier' && !opLevels.flat().includes(t.value);
+    if (ctx.assert(filter)) {
+      while (ctx.accept(filter)) {
+        ctx.expect(call);
+      }
+      return;
+    }
+    return left;
+  }));
 
-operator.is(ctx => {
-  const left = ctx.expect(call);
-  if (ctx.assert('identifier')) {
-    while (ctx.accept('identifier')) {
-      ctx.expect(call);
-    }
-    return;
-  }
-  return left;
-});
 
 call.is(ctx => {
   let f: Token;
-  if (f = ctx.accept(
-    'identifier',
-    'pow',
-    'mul', 'div', 'mod',
-    'add', 'sub',
-    'lambda'
-  )) {
-    if (['add', 'sub'].includes(f.type) && ctx.assert('number')) {
-      const num = ctx.expect('number');
+  if (f = <Token>ctx.accept('identifier', 'lambda')) {
+    if (['-', '+'].includes(f.value) && ctx.assert('number')) {
+      const num: Token = <Token>ctx.expect('number');
       num.raw = f.raw + num.raw;
       num.value = f.value + num.value;
       return num;
@@ -122,7 +112,9 @@ call.is(ctx => {
   return;
 });
 
+
 literal.is(ctx => ctx.expect('string', 'regex', 'number', list));
+
 
 list.is(ctx => {
   if (!ctx.assert('parens_open')) return ctx.expect(array);
@@ -135,6 +127,7 @@ list.is(ctx => {
   return;
 });
 
+
 array.is(ctx => {
   ctx.discard('square_open');
   ctx.expect(pipe);
@@ -143,5 +136,6 @@ array.is(ctx => {
   }
   ctx.discard('square_close');
 })
+
 
 export { program as default };

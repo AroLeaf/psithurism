@@ -47,6 +47,11 @@ if (hasFlag('h', 'help')) {
   process.exit();
 }
 
+if (hasFlag('v', 'version')) {
+  console.log(require('../package.json').version);
+  process.exit();
+}
+
 
 (() => { switch (args[0]) {
   case 'compile': {

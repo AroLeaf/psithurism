@@ -23,7 +23,8 @@
   "homepage": "https://github.com/AroLeaf/psithurism#readme",
   "devDependencies": {
     "@aroleaf/tsconfig": "^1.0.0",
-    "@swc/cli": "^0.1.57"
+    "@swc/cli": "^0.1.57",
+    "@types/node": "^18.7.5"
   },
   "dependencies": {
     "@aroleaf/parser": "^2.3.1",
