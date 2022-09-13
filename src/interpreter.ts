@@ -84,7 +84,7 @@ export const interpreter = {
     const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
     const expressions = exprs.map(expr => this.expression(expr, functions));
 
-    return (args: any[]) => expressions.reduce((left, right, i) => functions[ops[i-1].value](left(args).concat(right(args))))
+    return (args: any[]) => expressions.reduce((left, right, i) => functions[ops[i-1].value](left(args).concat(right(args)), []));
   },
 
   string(token: Token) {
