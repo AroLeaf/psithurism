@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { minifySync } from '@swc/core';
-import { compile } from '.';
+import { compile, interpret } from '.';
 
 
 const help =
@@ -63,13 +62,10 @@ if (hasFlag('v', 'version')) {
 
   case 'run': {
     if (!args[1]) return console.log(help);
-    const code = hasFlag('r', 'raw') ? args[0] : fs.readFileSync(path.resolve(args[1]), 'utf8');
-    const js = hasFlag('m', 'minify') ? minifySync(compile(code)).code : compile(code);
-    const tmpPath = path.resolve(os.tmpdir(), `psithurism.js`);
-    fs.writeFileSync(tmpPath, js, 'utf8');
-    const module = require(tmpPath);
+    const code = hasFlag('r', 'raw') ? args[1] : fs.readFileSync(path.resolve(args[1]), 'utf8');
+    const func = interpret(code);
     try {
-      console.log(...module(args.slice(2)));
+      console.log(...func(args.slice(2)));
     } catch (error) {
       console.error(error);
     }
