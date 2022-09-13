@@ -30,12 +30,6 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   parens_close: ')',
   square_open: '[',
   square_close: ']',
-  // add: '+',
-  // sub: '-',
-  // mul: '*',
-  // div: '/',
-  // mod: '%',
-  // pow: 'ə',
   string: {
     matches: /'(?:[^'\\]|\\[^])*'|"(?:[^"\\]|\\[^])*"/s,
     then: t => t.value = t.value.slice(1,-1).replace(/\\([^])/g, sub => {

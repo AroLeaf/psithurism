@@ -89,16 +89,6 @@ export class Compiler {
     
     return (args: string) => `((piped) => ${func}(${passed('piped')}, piped))(${args})`;
   }
-
-  list(node: ParsedNode) {
-    const expressions = node.children.map(child => this.expression(child));
-    return (args: string) => `((args) => [${expressions.map(expr => `...${expr('args')}`).join(',')}])(${args})`;
-  }
-
-  array(node: ParsedNode) {
-    const expressions = node.children.map(child => this.expression(child));
-    return (args: string) => `((args) => [[${expressions.map(expr => `...${expr('args')}`).join(',')}]])(${args})`;
-  }
   
   operator(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
@@ -119,6 +109,16 @@ export class Compiler {
     const regex = token.value;
     const flags = token.flags;
     return () => `[${XRegExp(regex, flags).toString()}]`;
+  }
+
+  list(node: ParsedNode) {
+    const expressions = node.children.map(child => this.expression(child));
+    return (args: string) => `((args) => [${expressions.map(expr => `...${expr('args')}`).join(',')}])(${args})`;
+  }
+
+  array(node: ParsedNode) {
+    const expressions = node.children.map(child => this.expression(child));
+    return (args: string) => `((args) => [[${expressions.map(expr => `...${expr('args')}`).join(',')}]])(${args})`;
   }
 }
 
