@@ -1,7 +1,6 @@
 import { ParsedNode } from './parser';
 import { builtins } from './builtins';
 import { Token } from '@aroleaf/parser';
-import XRegExp from 'xregexp';
 
 export interface CompilerOptions {
   builtinsPath?: string
@@ -38,7 +37,7 @@ export class Compiler {
       case 'operator': return this.operator(<ParsedNode>expr);
       case 'string': return this.string(<Token>expr);
       case 'number': return this.number(<Token>expr);
-      case 'regex': return this.regex(<Token>expr);
+      case 'js': return this.js(<Token>expr);
       case 'list': return this.list(<ParsedNode>expr);
       case 'array': return this.array(<ParsedNode>expr);
       default: throw new Error(`unknown expression type "${expr.type}"`);
@@ -105,10 +104,9 @@ export class Compiler {
     return () => `[${token.value}]`;
   }
 
-  regex(token: Token) {
-    const regex = token.value;
-    const flags = token.flags;
-    return () => `[${XRegExp(regex, flags).toString()}]`;
+  js(token: Token) {
+    const code = token.value;
+    return (args: string) => `((args) => ${code})(${args})`;
   }
 
   list(node: ParsedNode) {

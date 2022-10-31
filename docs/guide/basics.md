@@ -28,7 +28,7 @@ Numbers are simple too:
 
 Lists and arrays are similar, but not quite the same.
 
-Lists are flattened recursively. This means nesting lists has no effect. A list is written between parentheses:
+Lists get passed to functions as separate arguments, flattened recursively. This means nesting lists has no effect. A list is written between parentheses:
 
 ```py
 # these are the same
@@ -36,7 +36,7 @@ Lists are flattened recursively. This means nesting lists has no effect. A list 
 (1, (2, 3))
 ```
 
-Arrays are not flattened. This allows for nested arrays. An array is written between square brackets:
+Arrays are not flattened, and are passed as a single argument. This allows for nested arrays. An array is written between square brackets:
 
 ```py
 # these are not the same
@@ -48,7 +48,7 @@ Arrays are not flattened. This allows for nested arrays. An array is written bet
 
 There are a few functions that may look like literals, but are regular functions:
 
-```py
+```js
 true
 false
 null
@@ -57,7 +57,7 @@ null
 
 ## Functions
 
-In psithurism, everything is a function.
+In psithurism, everything is a function (yes, even literals!).
 
 ```py
 'hello!'  # function
@@ -74,7 +74,7 @@ This makes psithurism a very flexible language, since everything fits almost eve
 The main way of calling a function is using pipes:
 
 ```py
-# `…` pretty-prints its arguments
+# `…` pretty-prints its arguments, with a trailing newline
 'Hello, World!' | …
 ```
 
@@ -82,7 +82,7 @@ You can also call a function with a single argument directly if the argument is 
 
 ```py
 …'🍃'
-+(5, 5) # remember, lists are literals
++(5, 5) # this is a list literal
 ```
 
 A function called with a literal still takes its piped arguments as arguments:
@@ -108,7 +108,7 @@ greet('reader') # 'Hello, reader!'
 ```
 
 !!! note
-    Calling a user-defined function treats all its arguments as piped arugments, putting arugments that are actually passed to it before those actually piped to it.
+    Calling a user-defined function treats all its arguments as piped arugments, putting arugments that are actually passed to it before those actually piped to it (it's equivalent to using `(_ | <code>)` inline).
 
 
 ## Conditionals
@@ -123,5 +123,5 @@ However, where most languages require you to have an expression for both truthy 
 
 ```py
 >5 ? 'yes'  # will return `null` if falsy
->5 ?: 'no'  # mind the fact the `?` is still required, this allows for easier nesting
+>5 ?: 'no'  # the `?` is still required, this allows for better nesting
 ```

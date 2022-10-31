@@ -20,7 +20,7 @@ flags
   -m/--minify : minify the resulting code when compiling
 
 args
-  in    : script source, filepath or code (requires -r to be set)
+  in    : script source, filepath, or code (requires -r to be set)
   out   : compiled script location, filepath, stdout when not provided
   argv  : the arguments passed to the script
 `

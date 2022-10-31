@@ -1,7 +1,7 @@
 import { Token } from '@aroleaf/parser';
-import XRegExp from 'xregexp';
 import { builtins } from './builtins';
 import { ParsedNode } from './parser';
+import { PsithurismContext } from './types';
 
 export const interpreter = {
   interpret(program: ParsedNode) {
@@ -13,78 +13,103 @@ export const interpreter = {
     
     for (const func of assignments) {
       const name = (<Token>func.children[0]).value;
-      const callback = this.expression(<ParsedNode>func.children[1], functions);
+      const callback = this.expression(<ParsedNode>func.children[1]);
       functions[name] = callback;
     }
 
     for (const statement of statements) {
-      const expression = this.expression(<ParsedNode>statement, functions);
+      const expression = this.expression(<ParsedNode>statement);
       expressions.push(expression);
     }
 
-    return (args: any[]) => expressions.reduce((args, expr) => expr(args), args);
+    const ctx = {
+      functions,
+      pipes: new Map(),
+      i: -1,
+    };
+
+    return (args: any[]) => expressions.reduce((args, expr) => expr(ctx, args), args);
   },
 
-  expression(expr: ParsedNode|Token, functions: { [key: string]: Function }): Function {
+  expression(expr: ParsedNode|Token): Function {
     switch (expr.type) {
-      case 'pipe': return this.pipe(<ParsedNode>expr, functions);
-      case 'conditional': return this.conditional(<ParsedNode>expr, functions);
-      case 'call': return this.call(<ParsedNode>expr, functions);
-      case 'operator': return this.operator(<ParsedNode>expr, functions);
+      case 'pipe': return this.pipe(<ParsedNode>expr);
+      case 'conditional': return this.conditional(<ParsedNode>expr);
+      case 'call': return this.call(<ParsedNode>expr);
+      case 'operator': return this.operator(<ParsedNode>expr);
       case 'string': return this.string(<Token>expr);
       case 'number': return this.number(<Token>expr);
-      case 'regex': return this.regex(<Token>expr);
-      case 'list': return this.list(<ParsedNode>expr, functions);
-      case 'array': return this.array(<ParsedNode>expr, functions);
+      case 'js': return this.js(<Token>expr);
+      case 'list': return this.list(<ParsedNode>expr);
+      case 'array': return this.array(<ParsedNode>expr);
       default: throw new Error(`unknown expression type "${expr.type}"`);
     }
   },
 
-  pipe(node: ParsedNode, functions: { [key: string]: Function }) {
+  pipe(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
     const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
     
-    return exprs.map(expr => this.expression(expr, functions)).reduce((from, to, i) => {
+    return exprs.map(expr => this.expression(expr)).reduce((from, to, i) => {
       const op = ops[i-1].value;
       switch (op) {
-        case '|': return (args: any[]) => to(from(args));
-        case '≻': return (args: any[]) => to(from(args).flat());
-        case '≺': return (args: any[]) => {
-          const input = from(args);
+        case '|': return (ctx: PsithurismContext, args: any[]) => to(ctx, from(ctx, args));
+        case '≻': return (ctx: PsithurismContext, args: any[]) => to(ctx, from(ctx, args).flat());
+        case '≺': return (ctx: PsithurismContext, args: any[]) => {
+          const input = from(ctx, args);
           const output = Array(input.length);
-          for (let i = 0; i < input.length; i++) {
-            const arg = input[i];
-            output[i] = to(Array.isArray(arg) ? arg : [arg]);
+          const _i = ctx.i;
+          for (ctx.i = 0; ctx.i < input.length; ctx.i++) {
+            const arg = input[ctx.i];
+            output[ctx.i] = to(ctx, Array.isArray(arg) ? arg : [arg]);
           };
+          ctx.i = _i;
           return output;
         }
+        case '⇥': return (ctx: PsithurismContext, args: any[]) => {
+          const v = from(ctx, args);
+          const k = to(ctx, args)[0];
+          let pipe = ctx.pipes.get(k);
+          if (!pipe) {
+            pipe = [];
+            ctx.pipes.set(k, pipe);
+          }
+          pipe.push(...v);
+          return v;
+        };
+        case '⟼': return (ctx: PsithurismContext, args: any[]) => {
+          const k = from(ctx, args)[0];
+          const v = to(ctx, ctx.pipes.get(k) || []);
+          ctx.pipes.delete(k);
+          return v;
+        };
         default: throw new Error();
       }
-    })
+    });
   },
 
-  conditional(node: ParsedNode, functions: { [key: string]: Function }) {
-    const condition = this.expression(node.children[0], functions);
+  conditional(node: ParsedNode) {
+    const condition = this.expression(node.children[0]);
     
-    const then = !(node.children.length % 2) ? this.expression(node.children[1], functions) : () => [null];
-    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!, functions) : () => [null];
+    const then = !(node.children.length % 2) ? this.expression(node.children[1]) : () => [null];
+    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : () => [null];
     
-    return (args: any[]) => condition(args)[0] ? then(args) : not(args);
+    return (ctx: PsithurismContext, args: any[]) => condition(ctx, args)[0] ? then(ctx, args) : not(ctx, args);
   },
 
-  call(node: ParsedNode, functions: { [key: string]: Function }) {
+  call(node: ParsedNode) {
     const children = node.children as [Token, ParsedNode?];
-    const passed = children[1] ? this.expression(children[1], functions) : () => [];
+    const passed = children[1] ? this.expression(children[1]) : () => [];
     
-    return (piped: any[]) => functions[children[0].value](passed(piped), piped);
+    return (ctx: PsithurismContext, piped: any[]) => ctx.functions[children[0].value](ctx, passed(ctx, piped), piped);
   },
 
-  operator(node: ParsedNode, functions: { [key: string]: Function }) {
+  operator(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
     const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
-    const expressions = exprs.map(expr => this.expression(expr, functions));
+    const expressions = exprs.map(expr => this.expression(expr));
 
-    return (args: any[]) => expressions.reduce((left, right, i) => functions[ops[i-1].value](left(args).concat(right(args)), []));
+    return (ctx: PsithurismContext, args: any[]) => expressions.reduce((left, right, i) => ctx.functions[ops[i-1].value](ctx, left(ctx, args).concat(right(ctx, args)), []));
   },
 
   string(token: Token) {
@@ -95,20 +120,18 @@ export const interpreter = {
     return () => [+token.value];
   },
 
-  regex(token: Token) {
-    const regex = token.value;
-    const flags = token.flags;
-    return () => [XRegExp(regex, flags)];
+  js(token: Token) {
+    const code = token.value;
+    return new Function(`return (ctx, args) => ${code}`)();
   },
 
-  list(node: ParsedNode, functions: { [key: string]: Function }) {
-    const expressions = node.children.map(child => this.expression(child, functions));
-    return (args: any[]) => expressions.flatMap(expr => expr(args));
+  list(node: ParsedNode) {
+    const expressions = node.children.map(child => this.expression(child));
+    return (ctx: PsithurismContext, args: any[]) => expressions.flatMap(expr => expr(ctx, args));
   },
 
-  array(node: ParsedNode, functions: { [key: string]: Function }) {
-    const expressions = node.children.map(child => this.expression(child, functions));
-    return (args: any[]) => expressions.map(expr => expr(args));
+  array(node: ParsedNode) {
+    const expressions = node.children.map(child => this.expression(child));
+    return (ctx: PsithurismContext, args: any[]) => expressions.map(expr => expr(ctx, args));
   },
-
 }

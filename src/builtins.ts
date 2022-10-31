@@ -1,12 +1,7 @@
-import XRegExp from 'xregexp';
-
-declare global {
-  var i: number|undefined
-  var $: any[]
-}
+import { PsithurismContext } from './types';
 
 function vectorize(args: any[], callback: Function): [any] {
-  if (args.length <= 2) return [callback(...args)];
+  if (args.length < 2) return [callback(...args)];
 
   return [args.reduce((a,v) => {
     if (Array.isArray(a)) {
@@ -29,28 +24,24 @@ function vectorize(args: any[], callback: Function): [any] {
 
 
 const builtins: { [key: string]: Function } = {
-  '_': (passed: any[], piped: any[]): any[] => passed.concat(piped),
-  '$': (passed: any[]): any[] => typeof passed[0] === 'number' ? [globalThis.$[passed[0]]] : globalThis.$,
+  '_': (ctx: PsithurismContext, passed: any[], piped: any[]): any[] => passed.concat(piped),
   
-  '›': (passed: any[], piped: any[]): any[] =>
+  '›': (ctx: PsithurismContext, passed: any[], piped: any[]): any[] =>
     piped.length
       ? piped.slice(0, -(passed[0] || 1)).concat(passed.slice(1))
       : passed.slice(1).map(e => Array.isArray(e) ? e.slice(0, -passed[0]) : e),
   
-  '‹': (passed: any[], piped: any[]): any[] =>
+  '‹': (ctx: PsithurismContext, passed: any[], piped: any[]): any[] =>
     piped.length
       ? piped.slice(passed[0] || 1).concat(passed.slice(1))
       : passed.slice(1).map(e => Array.isArray(e) ? e.slice(passed[0]) : e),
 
 
-  'i': (): [number|undefined] => [globalThis.i],
+  '…': (ctx: PsithurismContext, passed: any[], piped: any[]): [] => (console.log(...passed, ...piped), []),
+  '.': (ctx: PsithurismContext, passed: any[], piped: any[]): [] => (process.stdout.write(passed.concat(piped).join('')), []),
 
 
-  '…': (passed: any[], piped: any[]): [] => (console.log(...passed, ...piped), []),
-  '.': (passed: any[], piped: any[]): [] => (process.stdout.write(passed.concat(piped).join('')), []),
-
-
-  '~': (passed: any[], piped: any[], args = passed.concat(piped)): number[] => {
+  '~': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): number[] => {
     const from = args[0];
     if (typeof from !== 'number') throw new Error('Can\'t create a range starting at a non-number value');
     const to = typeof args[1] === 'number' ? args[1] : 0;
@@ -62,7 +53,7 @@ const builtins: { [key: string]: Function } = {
       : Array.from({ length: Math.max(Math.ceil(((to || 0) - from) / step), 0) }, (_,i) => from + i * step);
   },
 
-  '+': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '+': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) { switch (a == null ? 'null' : typeof a) {
       case 'number': return a;
       case 'string': return Number(a);
@@ -86,7 +77,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '-': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '-': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) { switch (a == null ? 'null' : typeof a) {
       case 'number': return -a;
       case 'string': return -Number(a);
@@ -124,7 +115,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '*': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '*': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) { switch (a == null ? 'null' : typeof a) {
       case 'number': return a;
       case 'string': {
@@ -134,7 +125,7 @@ const builtins: { [key: string]: Function } = {
           for (const s of ps) n.push(s + c);
           ps.push(...n);
         }
-        return ps;
+        return [...new Set(ps)];
       }
       default: return a; 
     }}
@@ -159,9 +150,10 @@ const builtins: { [key: string]: Function } = {
           const cb = b[0] || '';
           const rest = f(a.slice(1), b.slice(1));
 
-          return ca === cb
+          return [...new Set(ca === cb
             ? rest.map(e => ca + e)
-            : rest.flatMap(e => [ca + e, cb + e]);
+            : rest.flatMap(e => [ca + e, cb + e])
+          )];
         }
 
         return f(a, v);
@@ -171,7 +163,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '/': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '/': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) { switch (a == null ? 'null' : typeof a) {
       case 'number': return a;
       case 'string': return a.split('');
@@ -200,7 +192,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  '%': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
+  '%': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     if (args.length < 2) return a;
 
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
@@ -230,7 +222,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
   
-  'ə': (passed: any[], piped: any[], args = piped.concat(passed)): [any]|any[] => vectorize(args.reverse(), (a: any, v: any) => {
+  'ə': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any]|any[] => vectorize(args.reverse(), (a: any, v: any) => {
     if (args.length < 2) return a;
 
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
@@ -251,10 +243,10 @@ const builtins: { [key: string]: Function } = {
   }),
   
   
-  '∨': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a || v),
-  '∧': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a && v),
+  '∨': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a || v),
+  '∧': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => a && v),
 
-  '⊻': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {    
+  '⊻': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {    
     if (args.length < 2) return !!a;
 
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
@@ -264,7 +256,7 @@ const builtins: { [key: string]: Function } = {
   }),
 
 
-  '&': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '&': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -283,7 +275,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '‖': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '‖': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -299,7 +291,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '^': (passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
+  '^': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -318,7 +310,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '«': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
+  '«': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     switch (types) {
       case 'number,null'  :
@@ -333,7 +325,7 @@ const builtins: { [key: string]: Function } = {
     }
   }),
 
-  '»': (passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
+  '»': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
     const types = `${a == null ? 'null' : typeof a},${v == null ? 'null' : typeof v}`;
     
     switch (types) {
@@ -350,7 +342,7 @@ const builtins: { [key: string]: Function } = {
   }),
 
 
-  '=': (passed: any[], piped: any[], args = passed.concat(piped)): [boolean] => [args.slice(0, -1).every((a: any, i: number) => {
+  '=': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)): [boolean] => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;
     switch (types) {
@@ -363,7 +355,7 @@ const builtins: { [key: string]: Function } = {
     }
   })],
 
-  '≈': (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '≈': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -396,7 +388,7 @@ const builtins: { [key: string]: Function } = {
     }
   })],
 
-  '≠': () => (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '≠': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -409,7 +401,7 @@ const builtins: { [key: string]: Function } = {
     }
   })],
 
-  '≉': () => (passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '≉': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -442,7 +434,7 @@ const builtins: { [key: string]: Function } = {
     }
   })],
 
-  '>': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '>': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -458,20 +450,20 @@ const builtins: { [key: string]: Function } = {
 
 
       case 'array,string':
-      case 'array,number': return a.every((e: any) => builtins['>']([e, v]));
+      case 'array,number': return a.every((e: any) => builtins['>'](ctx, [e, v]));
       
       case 'string,array':
-      case 'number,array': return v.every((e: any) => builtins['>']([e, a]));
+      case 'number,array': return v.every((e: any) => builtins['>'](ctx, [e, a]));
 
       case 'array,array': return a.length > v.length 
-        ? a.every((e: any, i: number) => builtins['>']([e, v[i]]))
-        : v.every((e: any, i: number) => builtins['>']([e, a[i]]));
+        ? a.every((e: any, i: number) => builtins['>'](ctx, [e, v[i]]))
+        : v.every((e: any, i: number) => builtins['>'](ctx, [e, a[i]]));
 
       default: return null;
     }
   })],
 
-  '≥': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '≥': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -487,20 +479,20 @@ const builtins: { [key: string]: Function } = {
 
 
       case 'array,string':
-      case 'array,number': return a.every((e: any) => builtins['≥']([e, v]));
+      case 'array,number': return a.every((e: any) => builtins['≥'](ctx, [e, v]));
       
       case 'string,array':
-      case 'number,array': return v.every((e: any) => builtins['≥']([e, a]));
+      case 'number,array': return v.every((e: any) => builtins['≥'](ctx, [e, a]));
 
       case 'array,array': return a.length > v.length 
-        ? a.every((e: any, i: number) => builtins['≥']([e, v[i]]))
-        : v.every((e: any, i: number) => builtins['≥']([e, a[i]]));
+        ? a.every((e: any, i: number) => builtins['≥'](ctx, [e, v[i]]))
+        : v.every((e: any, i: number) => builtins['≥'](ctx, [e, a[i]]));
 
       default: return null;
     }
   })],
 
-  '<': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '<': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -516,20 +508,20 @@ const builtins: { [key: string]: Function } = {
 
 
       case 'array,string':
-      case 'array,number': return a.every((e: any) => builtins['<']([e, v]));
+      case 'array,number': return a.every((e: any) => builtins['<'](ctx, [e, v]));
       
       case 'string,array':
-      case 'number,array': return v.every((e: any) => builtins['<']([e, a]));
+      case 'number,array': return v.every((e: any) => builtins['<'](ctx, [e, a]));
 
       case 'array,array': return a.length > v.length 
-        ? a.every((e: any, i: number) => builtins['<']([e, v[i]]))
-        : v.every((e: any, i: number) => builtins['<']([e, a[i]]));
+        ? a.every((e: any, i: number) => builtins['<'](ctx, [e, v[i]]))
+        : v.every((e: any, i: number) => builtins['<'](ctx, [e, a[i]]));
 
       default: return null;
     }
   })],
 
-  '≤': () => (passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
+  '≤': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => [args.slice(0, -1).every((a: any, i: number) => {
     const v = args[i+1];
     const types = `${Array.isArray(a) ? 'array' : a == null ? 'null' : typeof a},${Array.isArray(v) ? 'array' : v == null ? 'null' : typeof v}`;    
     switch (types) {
@@ -545,26 +537,24 @@ const builtins: { [key: string]: Function } = {
 
 
       case 'array,string':
-      case 'array,number': return a.every((e: any) => builtins['≤']([e, v]));
+      case 'array,number': return a.every((e: any) => builtins['≤'](ctx, [e, v]));
       
       case 'string,array':
-      case 'number,array': return v.every((e: any) => builtins['≤']([e, a]));
+      case 'number,array': return v.every((e: any) => builtins['≤'](ctx, [e, a]));
 
       case 'array,array': return a.length > v.length 
-        ? a.every((e: any, i: number) => builtins['≤']([e, v[i]]))
-        : v.every((e: any, i: number) => builtins['≤']([e, a[i]]));
+        ? a.every((e: any, i: number) => builtins['≤'](ctx, [e, v[i]]))
+        : v.every((e: any, i: number) => builtins['≤'](ctx, [e, a[i]]));
 
       default: return null;
     }
   })],
 
 
-
   true: (): [boolean] => [true],
   false: (): [boolean] => [false],
   null: (): [null] => [null],
+  i: (ctx: PsithurismContext): [number] => [ctx.i],
 }
 
-
-const location = __dirname;
-export { builtins, location };
+export { builtins };

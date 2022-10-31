@@ -1,11 +1,5 @@
 import { Lexer, Token } from '@aroleaf/parser';
 
-declare module '@aroleaf/parser' {
-  interface Token {
-    flags?: string
-  }
-}
-
 const lexer = new Lexer();
 
 interface TokenOptions {
@@ -21,7 +15,9 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   },
   pipe: '|',
   expand: '≺',
-  merge: '≻',
+  fuse: '≻',
+  fork: '⇥',
+  merge: '⟼',
   assign: '≔',
   separator: ',',
   then: '?',
@@ -44,10 +40,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
       }
     }),
   },
-  regex: {
-    matches: /`((?:[^\`\\]|\\[^])*)`([gimuynsxA]*)/s,
-    then: (t, m) => t.flags = m[2],
-  },
+  js: /`(.*?)`/s,
   number: /(?:\d*\.)?\d+(?:e-?\d+)?/,
   break: /;[\s;]*/s,
   identifier: /[a-zA-Z]+|\S/,

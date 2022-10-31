@@ -38,10 +38,11 @@ assignment.is(ctx => {
 });
 
 
+const pipes = ['pipe', 'expand', 'fuse', 'fork', 'merge'];
 pipe.is(ctx => {
   const left = ctx.expect(conditional);
-  if (ctx.assert('pipe') || ctx.assert('merge') || ctx.assert('expand')) {
-    while(ctx.accept('pipe', 'merge', 'expand')) {
+  if (pipes.some(p => ctx.assert(p))) {
+    while(ctx.accept(...pipes)) {
       ctx.expect(conditional);
     }
     return;
@@ -113,7 +114,7 @@ call.is(ctx => {
 });
 
 
-literal.is(ctx => ctx.expect('string', 'regex', 'number', list));
+literal.is(ctx => ctx.expect('string', 'js', 'number', list));
 
 
 list.is(ctx => {

@@ -5,7 +5,7 @@
   "decription": "A programming language with | pipes",
   "main": "dist/index.js",
   "scripts": {
-    "build": "npx swc src -d dist",
+    "build": "rm -rf dist && npx swc src -d dist",
     "dev": "bun run build && node dist/sidhe.js"
   },
   "bin": {
@@ -30,6 +30,7 @@
     "@aroleaf/parser": "^2.3.1",
     "@swc/core": "^1.2.233",
     "@swc/helpers": "^0.3.17",
+    "@swc/wasm": "^1.3.1",
     "xregexp": "^5.1.1"
   },
   "files": [
