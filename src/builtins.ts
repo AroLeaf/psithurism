@@ -551,10 +551,22 @@ const builtins: { [key: string]: Function } = {
   })],
 
 
+  '⇄': (ctx: PsithurismContext, passed: any[], piped: any[], args = passed.concat(piped)) => {
+    console.log(args);
+    return args.every(arg => typeof arg === 'string')
+        ? args.map(arg => [...arg].map(c => c.charCodeAt()))
+        : args.every(arg => typeof arg === 'string' || Array.isArray(arg))
+          ? args.map(arg => typeof arg === 'string' ? arg : String.fromCharCode(...arg))
+          : [args.flat().map(arg => typeof arg === 'string' ? arg : String.fromCharCode(arg)).join('')];
+  },
+
+
+  i: (ctx: PsithurismContext): [number] => [ctx.i],
+
+ 
   true: (): [boolean] => [true],
   false: (): [boolean] => [false],
   null: (): [null] => [null],
-  i: (ctx: PsithurismContext): [number] => [ctx.i],
 }
 
 export { builtins };

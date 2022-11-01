@@ -132,6 +132,6 @@ export const interpreter = {
 
   array(node: ParsedNode) {
     const expressions = node.children.map(child => this.expression(child));
-    return (ctx: PsithurismContext, args: any[]) => expressions.map(expr => expr(ctx, args));
+    return (ctx: PsithurismContext, args: any[]) => [expressions.flatMap(expr => expr(ctx, args))];
   },
 }
