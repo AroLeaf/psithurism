@@ -5,7 +5,7 @@ import { PsithurismContext } from './types';
 
 export const interpreter = {
   interpret(program: ParsedNode) {
-    const functions: { [key: string]: Function } = { ...builtins }
+    const functions: { [key: string]: Function } = { ...builtins };
     const expressions: Function[] = [];
 
     const assignments = program.children.filter(child => child.type === 'assignment') as ParsedNode[];
@@ -54,7 +54,7 @@ export const interpreter = {
       const op = ops[i-1].value;
       switch (op) {
         case '|': return (ctx: PsithurismContext, args: any[]) => to(ctx, from(ctx, args));
-        case '≻': return (ctx: PsithurismContext, args: any[]) => to(ctx, from(ctx, args).flat());
+
         case '≺': return (ctx: PsithurismContext, args: any[]) => {
           const input = from(ctx, args);
           const output = Array(input.length);
@@ -65,7 +65,10 @@ export const interpreter = {
           };
           ctx.i = _i;
           return output;
-        }
+        };
+
+        case '≻': return (ctx: PsithurismContext, args: any[]) => to(ctx, from(ctx, args).flat());
+
         case '⇥': return (ctx: PsithurismContext, args: any[]) => {
           const v = from(ctx, args);
           const k = to(ctx, args)[0];
@@ -77,12 +80,14 @@ export const interpreter = {
           pipe.push(...v);
           return v;
         };
+
         case '⟼': return (ctx: PsithurismContext, args: any[]) => {
           const k = from(ctx, args)[0];
           const v = to(ctx, ctx.pipes.get(k) || []);
           ctx.pipes.delete(k);
           return v;
         };
+
         default: throw new Error();
       }
     });
@@ -91,8 +96,8 @@ export const interpreter = {
   conditional(node: ParsedNode) {
     const condition = this.expression(node.children[0]);
     
-    const then = !(node.children.length % 2) ? this.expression(node.children[1]) : () => [null];
-    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : () => [null];
+    const then = !(node.children.length % 2) ? this.expression(node.children[1]) : () => [];
+    const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : () => [];
     
     return (ctx: PsithurismContext, args: any[]) => condition(ctx, args)[0] ? then(ctx, args) : not(ctx, args);
   },

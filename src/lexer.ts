@@ -27,7 +27,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   square_open: '[',
   square_close: ']',
   string: {
-    matches: /'(?:[^'\\]|\\[^])*'|"(?:[^"\\]|\\[^])*"/s,
+    matches: /'(?:[^'\\]|\\[^])*'/s,
     then: t => t.value = t.value.slice(1,-1).replace(/\\([^])/g, sub => {
       switch(sub[1]) {
         case 'n': return '\n';

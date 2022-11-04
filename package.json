@@ -5,7 +5,7 @@
   "decription": "A programming language with | pipes",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rm -rf dist && npx swc src -d dist",
+    "build": "rm -rf dist/* && npx swc src -d dist",
     "dev": "bun run build && node dist/sidhe.js"
   },
   "bin": {
