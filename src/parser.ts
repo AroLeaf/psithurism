@@ -15,6 +15,7 @@ export interface ParsedNode {
 const program = new Node('program');
 const assignment = new Node('assignment');
 const pipe = new Node('pipe');
+const loop = new Node('loop');
 const conditional = new Node('conditional');
 const call = new Node('call');
 const list = new Node('list');
@@ -40,15 +41,27 @@ assignment.is(ctx => {
 
 const pipes = ['pipe', 'expand', 'fuse', 'fork', 'merge'];
 pipe.is(ctx => {
-  const left = ctx.expect(conditional);
+  const left = ctx.expect(loop);
   if (pipes.some(p => ctx.assert(p))) {
     while(ctx.accept(...pipes)) {
-      ctx.expect(conditional);
+      ctx.expect(loop);
     }
     return;
   }
   return left;
 });
+
+
+loop.is(ctx => {
+  const left = ctx.expect(conditional);
+  if (ctx.assert('while')) {
+    while(ctx.accept('while')) {
+      ctx.expect(conditional);
+    }
+    return;
+  }
+  return left;
+})
 
 
 conditional.is(ctx => {

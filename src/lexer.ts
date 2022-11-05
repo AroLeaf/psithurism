@@ -18,6 +18,7 @@ const tokens: { [key: string]: string|RegExp|TokenOptions } = {
   fuse: '≻',
   fork: '⇥',
   merge: '⟼',
+  while: '⮔',
   assign: '≔',
   separator: ',',
   then: '?',

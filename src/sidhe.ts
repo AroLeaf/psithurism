@@ -72,5 +72,5 @@ if (hasFlag('v', 'version')) {
     break;
   }
 
-  default: console.log(help)
+  default: console.log(help);
 }})();

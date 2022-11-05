@@ -63,12 +63,12 @@ const builtins: { [key: string]: Function } = {
       : Array.from({ length: Math.max(Math.ceil(((to || 0) - from) / step), 0) }, (_,i) => from + i * step);
   },
 
-  '+': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {
+  '+': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)): [any] => vectorize(args, (a: any, v: any) => {    
     const types = getTypes(a, v).join();
     switch (types) {
       case 'number'       : return a;
       case 'string'       : return +a;
-      case 'array'        : return builtins['+'](ctx, a, []);
+      case 'array'        : return builtins['+'](ctx, a, [])[0];
       
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -90,7 +90,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return -a;
       case 'string'       : return -Number(a);
-      case 'array'        : return builtins['-'](ctx, a, []);
+      case 'array'        : return builtins['-'](ctx, a, [])[0];
       
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -134,7 +134,7 @@ const builtins: { [key: string]: Function } = {
         }
         return [...new Set(ps)];
       }
-      case 'array'        : return builtins['*'](ctx, a, []);
+      case 'array'        : return builtins['*'](ctx, a, [])[0];
       
       case 'number,null'  :
       case 'null,number'  : return 0;
@@ -172,7 +172,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return [...`${a}`].map(d => +d);
       case 'string'       : return a.split('');
-      case 'array'        : return builtins['/'](ctx, a, []);
+      case 'array'        : return builtins['/'](ctx, a, [])[0];
       
       case 'number,null'  : return NaN;
       case 'null,number'  : return 0;
@@ -213,7 +213,7 @@ const builtins: { [key: string]: Function } = {
         return sorted;
       }
       case 'string'       : return a;
-      case 'array'        : return builtins['%'](ctx, a, []);
+      case 'array'        : return builtins['%'](ctx, a, [])[0];
 
       case 'number,null'  : return NaN;
       case 'null,number'  : return 0;
@@ -245,7 +245,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a ** a;
       case 'string'       : return a; // TODO: replace with powerset
-      case 'array'        : return builtins['ə'](ctx, a, []);
+      case 'array'        : return builtins['ə'](ctx, a, [])[0];
 
       case 'number,null'  : return 1;
       case 'null,number'  : return 0;
@@ -274,7 +274,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       :
       case 'string'       : return a;
-      case 'array'        : return builtins['&'](ctx, a, []);
+      case 'array'        : return builtins['&'](ctx, a, [])[0];
 
       case 'number,null'  :
       case 'null,number'  : return 0;
@@ -297,7 +297,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       :
       case 'string'       : return a;
-      case 'array'        : return builtins['‖'](ctx, a, []);
+      case 'array'        : return builtins['‖'](ctx, a, [])[0];
 
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -317,7 +317,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       :
       case 'string'       : return a;
-      case 'array'        : return builtins['^'](ctx, a, []);
+      case 'array'        : return builtins['^'](ctx, a, [])[0];
 
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -340,7 +340,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a << 1;
       case 'string'       : return Buffer.from(a).map(char => char - 1).toString();
-      case 'array'        : return builtins['«'](ctx, a, []);
+      case 'array'        : return builtins['«'](ctx, a, [])[0];
 
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -359,7 +359,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a >> 1;
       case 'string'       : return Buffer.from(a).map(char => char + 1).toString();
-      case 'array'        : return builtins['»'](ctx, a, []);
+      case 'array'        : return builtins['»'](ctx, a, [])[0];
 
       case 'number,null'  :
       case 'string,null'  : return a;
@@ -486,7 +486,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number': return a > 0;
       case 'string': return true;
-      case 'array' : return a.map((v: any) => builtins['>'](ctx, [v], []));
+      case 'array' : return a.map((v: any) => builtins['>'](ctx, [v], []))[0];
 
       case 'number,null'  : return a > 0;
       case 'null,number'  : return 0 > v;
@@ -519,7 +519,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a >= 0;
       case 'string'       : return true;
-      case 'array'        : return a.map((v: any) => builtins['≥'](ctx, [v], []));
+      case 'array'        : return a.map((v: any) => builtins['≥'](ctx, [v], []))[0];
 
       case 'number,null'  : return a >= 0;
       case 'null,number'  : return 0 >= v;
@@ -552,7 +552,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a < 0;
       case 'string'       : return true;
-      case 'array'        : return a.map((v: any) => builtins['<'](ctx, [v], []));
+      case 'array'        : return a.map((v: any) => builtins['<'](ctx, [v], []))[0];
 
       case 'number,null'  : return a < 0;
       case 'null,number'  : return 0 < v;
@@ -585,7 +585,7 @@ const builtins: { [key: string]: Function } = {
     switch (types) {
       case 'number'       : return a <= 0;
       case 'string'       : return true;
-      case 'array'        : return a.map((v: any) => builtins['≤'](ctx, [v], []));
+      case 'array'        : return a.map((v: any) => builtins['≤'](ctx, [v], []))[0];
 
       case 'number,null'  : return a <= 0;
       case 'null,number'  : return 0 <= v;
@@ -614,6 +614,7 @@ const builtins: { [key: string]: Function } = {
 
 
   '"': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => args.map(arg => arg.toString()),
+  '@': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => args.map(arg => Array.isArray(arg) ? builtins['@'](ctx, arg, []) : +arg),
   
   '⇄': (ctx: PsithurismContext, passed: any[], piped: any[], args = piped.concat(passed)) => {
     return args.every(arg => typeof arg === 'string')

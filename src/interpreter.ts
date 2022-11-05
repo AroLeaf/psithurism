@@ -34,6 +34,7 @@ export const interpreter = {
   expression(expr: ParsedNode|Token): Function {
     switch (expr.type) {
       case 'pipe': return this.pipe(<ParsedNode>expr);
+      case 'loop': return this.loop(<ParsedNode>expr);
       case 'conditional': return this.conditional(<ParsedNode>expr);
       case 'call': return this.call(<ParsedNode>expr);
       case 'operator': return this.operator(<ParsedNode>expr);
@@ -91,6 +92,25 @@ export const interpreter = {
         default: throw new Error();
       }
     });
+  },
+
+  loop(node: ParsedNode) {
+    const ops = <Token[]>node.children.filter((_,i) => i%2);
+    const exprs = <ParsedNode[]>node.children.filter((_,i) => !(i%2));
+
+    return exprs.map(expr => this.expression(expr)).reduce((body, condition, i) => {
+      const op = ops[i-1].value;
+      switch (op) {
+        case '⮔': {
+          return (ctx: PsithurismContext, args: any[]) => {
+            let res = args;
+            while (condition(ctx, res)[0]) res = body(ctx, res);
+            return res;
+          }
+        }
+        default: throw new Error();
+      }
+    })
   },
 
   conditional(node: ParsedNode) {
