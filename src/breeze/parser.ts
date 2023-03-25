@@ -1,67 +1,78 @@
 import { Node, Token } from '@aroleaf/parser';
 
-declare module '@aroleaf/parser' {
-  interface ParserContext {
-    opLevel?: number
-  }
-}
-
-export interface ParsedNode {
-  type: string
-  children: (ParsedNode | Token)[]
-}
-
-
-const program = new Node('program');
-const assignment = new Node('assignment');
+const parser = new Node('program');
+const blockFunction = new Node('function');
 const pipe = new Node('pipe');
+
+const inlineFunction = new Node('function');
 const loop = new Node('loop');
+const assignment = new Node('assignment');
+const lambda = new Node('lambda');
 const conditional = new Node('conditional');
 const call = new Node('call');
+
+const chain = new Node('chain');
 const list = new Node('list');
 const array = new Node('array');
 const literal = new Node('literal');
 
 
-program.is(ctx => {
-  while(ctx.current()) {
-    ctx.expect(assignment, pipe);
-    if (ctx.current()) ctx.discard('break');
+parser.is(ctx => {
+  ctx.expect(blockFunction, pipe);
+  while (ctx.ignore('break')) {
+    ctx.accept(blockFunction, pipe);
   }
+});
+
+
+blockFunction.is(ctx => {
+  ctx.expect('identifier');
+  ctx.discard('function');
+  ctx.expect(pipe);
+});
+
+
+pipe.is(ctx => {
+  const left = ctx.expect(inlineFunction, loop);
+  if (ctx.assert('pipe')) {
+    while (ctx.accept('pipe')) {
+      ctx.expect(inlineFunction, loop);
+    }
+    return;
+  }
+  return left;
+});
+
+
+inlineFunction.is(ctx => {
+  ctx.expect('identifier');
+  ctx.discard('function');
+  ctx.expect(inlineFunction, loop);
+});
+
+
+loop.is(ctx => {
+  const left = ctx.expect(assignment, lambda);
+  if (ctx.ignore('loop')) {
+    ctx.expect(loop);
+    return;
+  }
+  return left;
 });
 
 
 assignment.is(ctx => {
   ctx.expect('identifier');
   ctx.discard('assign');
-  ctx.expect(pipe);
+  ctx.expect(assignment, lambda);
+});
+
+
+lambda.is(ctx => {
+  if(!ctx.ignore('lambda')) return ctx.expect(conditional);
+  ctx.expect(conditional);
   return;
 });
-
-
-const pipes = ['pipe', 'expand', 'fuse', 'fork', 'merge'];
-pipe.is(ctx => {
-  const left = ctx.expect(loop);
-  if (pipes.some(p => ctx.assert(p))) {
-    while(ctx.accept(...pipes)) {
-      ctx.expect(loop);
-    }
-    return;
-  }
-  return left;
-});
-
-
-loop.is(ctx => {
-  const left = ctx.expect(conditional);
-  if (ctx.assert('while')) {
-    while(ctx.accept('while')) {
-      ctx.expect(conditional);
-    }
-    return;
-  }
-  return left;
-})
 
 
 conditional.is(ctx => {
@@ -84,7 +95,7 @@ const opLevels = [
   ['«', '»'],
   ['+', '-'],
   ['*', '/', '%'],
-  ['ə'],
+  ['e', 'E'],
 ];
 
 const operator = opLevels
@@ -113,43 +124,44 @@ const operator = opLevels
 
 
 call.is(ctx => {
-  let f: Token;
-  if (f = <Token>ctx.accept('identifier', 'lambda')) {
-    if (['-', '+'].includes(f.value) && ctx.assert('number')) {
-      const num: Token = <Token>ctx.expect('number');
-      num.raw = f.raw + num.raw;
-      num.value = f.value + num.value;
-      return num;
-    }
-    ctx.accept(literal);
-  } else return ctx.expect(literal);
-  return;
+  if (ctx.accept('identifier')) {
+    ctx.accept(chain);
+    return;
+  }
+  return ctx.expect(chain);
 });
 
 
-literal.is(ctx => ctx.expect('string', 'js', 'number', list));
+const chainAllows = ['lambda', 'break', 'identifier', list];
+chain.is(ctx => {
+  if (!ctx.assert('squiggly_open')) return ctx.expect(list);
+  ctx.discard('squiggly_open');
+  ctx.expect(...chainAllows);
+  while (ctx.accept(...chainAllows));
+  ctx.discard('squiggly_close');
+  return;
+});
 
 
 list.is(ctx => {
   if (!ctx.assert('parens_open')) return ctx.expect(array);
   ctx.discard('parens_open');
-  ctx.expect(pipe);
-  while (ctx.ignore('separator')) {
-    ctx.expect(pipe);
-  }
+  if (ctx.accept(pipe)) while (ctx.ignore('separator')) ctx.expect(pipe);
   ctx.discard('parens_close');
   return;
 });
 
 
 array.is(ctx => {
+  if (!ctx.assert('square_open')) return ctx.expect(literal);
   ctx.discard('square_open');
-  ctx.expect(pipe);
-  while (ctx.ignore('separator')) {
-    ctx.expect(pipe);
-  }
+  if (ctx.accept(pipe)) while (ctx.ignore('separator')) ctx.expect(pipe);
   ctx.discard('square_close');
-})
+  return;
+});
 
 
-export { program as default };
+literal.is(ctx => ctx.expect('string', 'character', 'number'));
+
+
+export default parser;

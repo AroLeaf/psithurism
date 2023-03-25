@@ -36,14 +36,4 @@ markdown_extensions:
       emoji_index: !!python/name:materialx.emoji.twemoji
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - pymdownx.tabbed:
-      alternate_style: true 
-
-nav:
-  - Psithurism: index.md
-  - Guide:
-    - guide/index.md
-    - Install: guide/install.md
-    - Basics: guide/basics.md
-    - Pipes: guide/pipes.md
-  - Documentation:
-    - documentation/index.md
+      alternate_style: true
