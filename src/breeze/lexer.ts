@@ -14,6 +14,7 @@ const lexer = new Lexer({
   separator: ',',
   then: '?',
   else: ':',
+  modifier: /⊙|⊕/,
   parens_open: '(',
   parens_close: ')',
   square_open: '[',

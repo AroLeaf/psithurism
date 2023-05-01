@@ -21,11 +21,11 @@ export function indecesOf(str: string, substr: string): number[] {
 
 export function levenshtein(a: string, b: string) {
   const matrix: number[][] = Array.from({ length: a.length + 1 }, () => []);
-  for (let i = 0; i <= a.length; i++) for (let j = 0; j <= b.length; j++) {
-    matrix[i][j] = !i?j:!j?i:Math.min(
-      matrix[i-1][j] + 1,
-      matrix[i][j-1] + 1,
-      matrix[i-1][j-1] + +(a[i]!==b[j]),
+  for (let x = 0; x <= a.length; x++) for (let y = 0; y <= b.length; y++) {
+    matrix[x][y] = !x?y:!y?x:Math.min(
+      matrix[x-1][y] + 1,
+      matrix[x][y-1] + 1,
+      matrix[x-1][y-1] + +(a[x]!==b[y]),
     );
   }
   return matrix[a.length][b.length];

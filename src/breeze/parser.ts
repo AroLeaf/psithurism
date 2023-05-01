@@ -9,6 +9,7 @@ const loop = new Node('loop');
 const assignment = new Node('assignment');
 const lambda = new Node('lambda');
 const conditional = new Node('conditional');
+const modifier = new Node('modifier');
 const call = new Node('call');
 
 const chain = new Node('chain');
@@ -70,7 +71,7 @@ assignment.is(ctx => {
 
 lambda.is(ctx => {
   if(!ctx.ignore('lambda')) return ctx.expect(conditional);
-  ctx.expect(conditional);
+  ctx.expect(lambda);
   return;
 });
 
@@ -111,16 +112,23 @@ const operator = opLevels
     return left;
   }))
   .concat(new Node('operator', ctx => {
-    const left = ctx.expect(call);
+    const left = ctx.expect(modifier);
     const filter = (t: Token) => t.type === 'identifier' && !opLevels.flat().includes(t.value);
     if (ctx.assert(filter)) {
       while (ctx.accept(filter)) {
-        ctx.expect(call);
+        ctx.expect(modifier);
       }
       return;
     }
     return left;
   }));
+
+
+modifier.is(ctx => {
+  if (!ctx.accept('modifier')) return ctx.expect(call);
+  ctx.expect(modifier);
+  return;
+});
 
 
 call.is(ctx => {

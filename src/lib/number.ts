@@ -23,3 +23,18 @@ export function range(from: number, to: number, step: number) {
 export function digits(n: number, base = 10): number[] {
   return Array.from(n.toString(base), Number);
 }
+
+export function primeFactors(n: number): number[] {
+  if (n === 1) return [1];
+  const factors = [];
+  let divisor = 2;
+  while (n >= 2) {
+    if (n % divisor) {
+      divisor++;
+      continue;
+    }
+    factors.push(divisor);
+    n /= divisor;
+  }
+  return factors;
+}

@@ -3,7 +3,7 @@ import { BreezeContext } from './interpreter';
 
 export type BreezeBuiltin = (ctx: BreezeContext, passed: any[], piped: any[]) => any[];
 
-function getTypesString(objects: any[]) {
+function typesOf(objects: any[]) {
   return objects.map(o => {
     switch (true) {
       case o === null: return 'null';
@@ -13,13 +13,17 @@ function getTypesString(objects: any[]) {
   }).join(',');
 }
 
+function combineArgs(func: (ctx: BreezeContext, args: any[]) => any[]): BreezeBuiltin {
+  return (ctx, passed, piped) => func(ctx, piped.concat(passed));
+}
+
 function operator(func: (acc: any, item?: any, i?: number | undefined) => any): BreezeBuiltin {
-  return (_ctx, passed, piped) => [_array.reduceNoSkip(piped.concat(passed), func)];
+  return combineArgs((_ctx, args) => [_array.reduceNoSkip(args, func)]);
 }
 
 
 function add(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'number': return a;
@@ -31,17 +35,14 @@ function add(a: any, b?: any): any {
     case /(?<!array),null$/.test(types): return a;
     case /^((string|number|boolean)(,|$)){2}/.test(types): return a + b;
 
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => add(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => add(v, b));
-    case /,array$/.test(types): return b.map((v: any) => add(a, v));
+    case types === 'array,array': return a.concat(b);
+    case /^array,/.test(types): return a.concat([b]);
+    case /,array$/.test(types): return [a].concat(b);
   }
 }
 
 function subtract(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null': return a;
     case types === 'number':
@@ -59,17 +60,14 @@ function subtract(a: any, b?: any): any {
     case types === 'string,number': return a.slice(0, -b);
     case types === 'number,string': return b.slice(a);
 
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => subtract(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => subtract(v, b));
-    case /,array$/.test(types): return b.map((v: any) => subtract(a, v));
+    case types === 'array,array':
+    case /^array,/.test(types): return _array.remove(a, b);
+    case /,array$/.test(types): return _array.remove([a], b)[0];
   }
 }
 
 function multiply(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean': return a;
@@ -78,6 +76,9 @@ function multiply(a: any, b?: any): any {
 
     case /string,(boolean|number)/.test(types): return a.repeat(+b);
     case /(boolean|number),string/.test(types): return b.repeat(+a);
+
+    case /array,(boolean|number)/.test(types): return _array.repeat(a, +b);
+    case /(boolean|number),array/.test(types): return _array.repeat(b, +a);
 
     case types === 'string,string': {
       const f = (a: string, b: string): string[] => {
@@ -100,18 +101,11 @@ function multiply(a: any, b?: any): any {
     case /(?<!array),null$/.test(types): return /string/.test(types) ? '' : 0;
 
     case /^((number|boolean)(,|$)){2}/.test(types): return a * b;
-
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => multiply(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => multiply(v, b));
-    case /,array$/.test(types): return b.map((v: any) => multiply(a, v));
   }
 }
 
 function divide(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean': return a;
@@ -122,24 +116,20 @@ function divide(a: any, b?: any): any {
     case /string,(boolean|number)/.test(types): return b === 0 ? [] : _string.chunks(a, +b);
     case /(boolean|number),string/.test(types): return a === 0 ? [] : _string.chunks(b, +a);
 
+    case /array,(boolean|number)/.test(types): return _array.chunks(a, +b);
+    case /(boolean|number),array/.test(types): return _array.chunks(b, +a);
+
     case types === 'string,string': return a.split(b);
 
     case /^null,(?!array)/.test(types):
     case /(?<!array),null$/.test(types): return /string/.test(types) ? '' : a / 0;
 
     case /^((number|boolean)(,|$)){2}/.test(types): return a / b;
-
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => divide(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => divide(v, b));
-    case /,array$/.test(types): return b.map((v: any) => divide(a, v));
   }
 }
 
 function modulo(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean': return a;
@@ -150,25 +140,21 @@ function modulo(a: any, b?: any): any {
     case /string,(boolean|number)/.test(types): return b === 0 ? [] : _string.chunksOfSize(a, +b);
     case /(boolean|number),string/.test(types): return a === 0 ? [] : _string.chunksOfSize(b, +a);
 
+    case /array,(boolean|number)/.test(types): return _array.chunksOfSize(a, +b);
+    case /(boolean|number),array/.test(types): return _array.chunksOfSize(b, +a);
+
     case types === 'string,string': return _string.indecesOf(a, b);
 
     case /^null,(?!array)/.test(types):
     case /(?<!array),null$/.test(types): return /string/.test(types) ? '' : 0 % b;
 
     case /^((number|boolean)(,|$)){2}/.test(types): return a % b;
-
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => modulo(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => modulo(v, b));
-    case /,array$/.test(types): return b.map((v: any) => modulo(a, v));
   }
 }
 
 
 function bitwiseAnd(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -180,8 +166,6 @@ function bitwiseAnd(a: any, b?: any): any {
     case /(?<!array),null$/.test(types): return /string/.test(types) ? '' : 0;
 
     case /^((number|boolean)(,|$)){2}/.test(types): return a & b;
-
-
 
     case /string,(boolean|number)/.test(types): {
       const mask = _number.digits(b, 2);
@@ -198,16 +182,20 @@ function bitwiseAnd(a: any, b?: any): any {
     }
 
     case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => bitwiseAnd(v, s[i] || null));
+      const setOfA = new Set(a);
+      const setOfB = new Set(b);
+      return _array.interleave(
+        a.filter((v: any) => setOfB.has(v)),
+        b.filter((v: any) => setOfA.has(v)),
+      );
     }
-    case /^array,/.test(types): return a.map((v: any) => bitwiseAnd(v, b));
-    case /,array$/.test(types): return b.map((v: any) => bitwiseAnd(a, v));
+    case /^array,/.test(types): return a.filter((v: any) => v === b);
+    case /,array$/.test(types): return b.filter((v: any) => v === a);
   }
 }
 
 function bitwiseOr(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -228,17 +216,14 @@ function bitwiseOr(a: any, b?: any): any {
       return [...l].map((c, i) => s[i] || c);
     }
 
-    case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => bitwiseOr(v, s[i] || null));
-    }
-    case /^array,/.test(types): return a.map((v: any) => bitwiseOr(v, b));
-    case /,array$/.test(types): return b.map((v: any) => bitwiseOr(a, v));
+    case types === 'array,array': return _array.interleave(a, b);
+    case /^array,/.test(types): return a;
+    case /,array$/.test(types): return b;
   }
 }
 
 function bitwiseXor(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -266,16 +251,20 @@ function bitwiseXor(a: any, b?: any): any {
     }
 
     case types === 'array,array': {
-      const [l, s] = a.length < b.length ? [b, a] : [a, b];
-      return l.map((v: any, i: number) => bitwiseXor(v, s[i] || null));
+      const setOfA = new Set(a);
+      const setOfB = new Set(b);
+      return _array.interleave(
+        a.filter((v: any) => !setOfB.has(v)),
+        b.filter((v: any) => !setOfA.has(v)),
+      );
     }
-    case /^array,/.test(types): return a.map((v: any) => bitwiseXor(v, b));
-    case /,array$/.test(types): return b.map((v: any) => bitwiseXor(a, v));
+    case /^array,/.test(types): return a.filter((v: any) => v !== b);
+    case /,array$/.test(types): return b.filter((v: any) => v !== a);
   }
 }
 
 function shiftLeft(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null': return 0;
     case types === 'boolean':
@@ -301,7 +290,7 @@ function shiftLeft(a: any, b?: any): any {
 }
 
 function shiftRight(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   
   switch (true) {
     case types === 'null': return 0;
@@ -329,7 +318,7 @@ function shiftRight(a: any, b?: any): any {
 
 
 function equals(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -350,7 +339,7 @@ function equals(a: any, b?: any): any {
 }
 
 function notEquals(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -371,7 +360,7 @@ function notEquals(a: any, b?: any): any {
 }
 
 function approximatelyEquals(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -403,7 +392,7 @@ function approximatelyEquals(a: any, b?: any): any {
 }
 
 function notApproximatelyEquals(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -435,8 +424,27 @@ function notApproximatelyEquals(a: any, b?: any): any {
 }
 
 
+function comparisonOperator(func: (a: any, b?: any, i?: number | undefined) => any): BreezeBuiltin {
+  return combineArgs((_ctx, args) => {
+    switch (args.length) {
+      case 0:
+      case 1: return args;
+      default: {
+        const out = [];
+        for (let i = 1; i < args.length - 1; i++) {
+          const a = args[i];
+          const b = args[i + 1];
+          out.push(func(a, b, i));
+        }
+        return out;
+      }
+    }
+  });
+}
+
+
 function greater(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null': return false;
     case types === 'boolean': return a;
@@ -461,7 +469,7 @@ function greater(a: any, b?: any): any {
 }
 
 function greaterOrEqual(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -485,7 +493,7 @@ function greaterOrEqual(a: any, b?: any): any {
 }
 
 function less(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null':
     case types === 'boolean':
@@ -510,7 +518,7 @@ function less(a: any, b?: any): any {
 }
 
 function lessOrEqual(a: any, b?: any): any {
-  const types = getTypesString(b !== undefined ? [a, b] : [a]);
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
     case types === 'null': return true;
     case types === 'boolean': return !a;
@@ -534,16 +542,74 @@ function lessOrEqual(a: any, b?: any): any {
 }
 
 
+function setOperator(func: (acc: any, item?: any, i?: number | undefined) => any): BreezeBuiltin {
+  return combineArgs((_ctx, args) => {
+    return args.length ? [args.map(arg => {
+      switch(typesOf([arg])) {
+        case 'array': return arg;
+        case 'string': return arg.split('');
+        default: return [arg];
+      }
+    }).reduce(func)]: [];
+  });
+}
+
+
+function union(a: any[], b: any[]): any[] {
+  return [...new Set(a.concat(b))];
+}
+
+function intersection(a: any[], b: any[]): any[] {
+  const setOfA = new Set(a);
+  const setOfB = new Set(b);
+  return [...setOfA].filter(item => setOfB.has(item));
+}
+
+function difference(a: any[], b: any[]): any[] {
+  const setOfA = new Set(a);
+  const setOfB = new Set(b);
+  return [...setOfA].filter(item => !setOfB.has(item));
+}
+
+function memberOf(a: any[], b: any[]): boolean {
+  return b.includes(a);
+}
+
+function has(a: any[], b: any[]): boolean {
+  return a.includes(b);
+}
+
+function subsetOf(a: any[], b: any[]): boolean {
+  const setOfB = new Set(b);
+  return a.every(item => setOfB.has(item));
+}
+
+function supersetOf(a: any[], b: any[]): boolean {
+  const setOfA = new Set(a);
+  return b.every(item => setOfA.has(item));
+}
+
+
+function join(a: any, b?: any): any {
+  const types = typesOf(b !== undefined ? [a, b] : [a]);
+  switch (true) {
+    case /^(array|string),(boolean|number|string)$/.test(types): return [...a].join(b);
+    case /^(boolean|number),(array|string)$/.test(types): return [...b].join(a);
+    default: throw new Error(`Cannot join arguments of types \`${types}\``);
+  }
+}
+
+
 const builtins = {
-  '_': (_ctx, passed, piped) => piped.concat(passed),
+  '_': combineArgs((_ctx, args) => args),
 
-  '›': (_ctx, passed, piped, args = piped.concat(passed)): any[] => args.slice(0, ~(passed.at(-1) || 0)),
-  '‹': (_ctx, passed, piped, args = piped.concat(passed)): any[] => args.slice(passed.at(-1) || 1, -!!passed.length),
+  '›': (_ctx, passed, piped): any[] => passed.length ? passed.slice(1).concat(piped.slice(0, -passed[0])) : piped.slice(0, -1),
+  '‹': (_ctx, passed, piped): any[] => passed.length ? piped.slice(passed[0]).concat(passed.slice(1)) : piped.slice(1),
 
-  '…': (_ctx, passed, piped): any[] => (console.log(...piped, ...passed), []),
-  '.': (_ctx, passed, piped, args = piped.concat(passed)): any[] => (process.stdout.write(args.join(' ')), []),
+  '…': combineArgs((_ctx, args): any[] => (console.log(...args), [])),
+  '.': combineArgs((_ctx, args): any[] => (process.stdout.write(args.join('')), [])),
 
-  '~': (_ctx, passed, piped, args = piped.concat(passed)): number[] => {
+  '~': combineArgs((_ctx, args): number[] => {
     let [from, to, step] = args;
     if (typeof to !== 'number') {
       to = from;
@@ -551,9 +617,9 @@ const builtins = {
     }
     if (typeof step !== 'number') step = from < to ? 1 : -1;
     return _number.range(from, to, step);
-  },
+  }),
 
-  // Math Operators
+  // Arithmetic Operators
   '+': operator(add),
   '-': operator(subtract),
   '*': operator(multiply),
@@ -577,16 +643,27 @@ const builtins = {
   '≠': operator(notEquals),
   '≈': operator(approximatelyEquals),
   '≉': operator(notApproximatelyEquals),
-
   // Comparison Operators
-  '>': operator(greater),
-  '≥': operator(greaterOrEqual),
-  '<': operator(less),
-  '≤': operator(lessOrEqual),
+  '>': comparisonOperator(greater),
+  '≥': comparisonOperator(greaterOrEqual),
+  '<': comparisonOperator(less),
+  '≤': comparisonOperator(lessOrEqual),
+
+  // Set Operators
+  '∪': setOperator(union),
+  '∩': setOperator(intersection),
+  '∖': setOperator(difference),
+  '∈': setOperator(memberOf),
+  '∋': setOperator(has),
+  '⊂': setOperator(subsetOf),
+  '⊃': setOperator(supersetOf),
+
+  // Sequence Operators
+  '⨝': operator(join),
 
   // variables
   'i': (ctx): [number] => [ctx.i],
-  '$': (ctx, passed, piped, args = piped.concat(passed)): any[] => args.length ? [ctx.$[args.at(-1)]] : ctx.$,
+  '$': (ctx, passed): any[] => passed[0] ? [ctx.$[passed[0]]] : ctx.$,
 
   // constants
   'ε': (): [string] => [''],

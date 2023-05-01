@@ -1,5 +1,6 @@
 import { ParsedNode, Token } from '@aroleaf/parser';
 import builtins, { BreezeBuiltin } from './builtins';
+import { _array } from '../lib';
 
 export interface BreezeContext {
   variables: Map<any, any[]>;
@@ -35,6 +36,7 @@ export default {
       case 'assignment': return this.assignment(expr as ParsedNode);
       case 'lambda': return this.lambda(expr as ParsedNode);
       case 'conditional': return this.conditional(expr as ParsedNode);
+      case 'modifier': return this.modifier(expr as ParsedNode);
       case 'operator': return this.operator(expr as ParsedNode);
       case 'call': return this.call(expr as ParsedNode);
       case 'chain': return this.chain(expr as ParsedNode);
@@ -121,6 +123,47 @@ export default {
     return (ctx: BreezeContext, args: any[]) => condition(ctx, args)[0] ? then(ctx, args) : not(ctx, args);
   },
 
+  modifier(node: ParsedNode) {
+    const modifier = node.children[0].value;
+    const expression = this.expression(node.children[1]);
+
+    return (ctx: BreezeContext, args: any[]) => {
+      switch (modifier) {
+        case '⊙':
+        case '⊕': {
+          switch (args.length) {
+            case 0: return [];
+            case 1: {
+              const arg = args[0];
+              return Array.isArray(arg) ? arg.map(x => expression(ctx, [x])) : expression(ctx, [arg]);
+            }
+            default: return _array.reduceNoSkip(args, (a, b) => {
+              switch (+Array.isArray(a) + +Array.isArray(b) * 2) {
+                case 0: return expression(ctx, [a, b]);
+                case 1: return [a.flatMap((x: any) => expression(ctx, [x, b]))];
+                case 2: return [b.flatMap((x: any) => expression(ctx, [a, x]))];
+                case 3: {
+                  const [l, s] = a.length < b.length ? [b, a] : [a, b];
+                  return [l.flatMap((x: any, i: number) => i < s.length 
+                    ? expression(ctx, [x, s[i]]) 
+                    : modifier === '⊙' 
+                      ? x 
+                      : expression(ctx, [x, null])
+                  )];
+                }
+                default: throw new Error();
+              }
+            });
+          }
+        };
+
+        case '⊗': throw new Error('⊗ has no implementation yet');
+
+        default: throw new Error();
+      }
+    }
+  },
+
   operator(node: ParsedNode) {
     const ops = <Token[]>node.children.filter((_,i) => i%2);
     const expressions = node.children.filter((_,i) => !(i%2)).map(child => this.expression(child));
@@ -130,7 +173,7 @@ export default {
       const variable = ctx.variables.get(op);
       if (typeof variable?.[0] === 'function') return variable[0](...left(ctx, args), ...right(ctx, args));
       if (ctx.builtins[op]) return ctx.builtins[op](ctx, left(ctx, args).concat(right(ctx, args)), []);
-      throw new Error(`${op} is neither a function variable, nor a builtin function!`);
+      throw new Error(`${op} is neither a variable list with a function as first element, nor a builtin function!`);
     });
   },
 
@@ -141,8 +184,9 @@ export default {
     return (ctx: BreezeContext, args: any[]) => {
       const variable = ctx.variables.get(name);
       if (typeof variable?.[0] === 'function') return variable[0](...expression(ctx, args));
+      if (variable) return variable;
       if (ctx.builtins[name]) return ctx.builtins[name](ctx, expression(ctx, args), args);
-      throw new Error(`${name} is neither a function variable, nor a builtin function!`);
+      throw new Error(`${name} is neither a variable, nor a builtin function!`);
     }
   },
 
