@@ -9,7 +9,6 @@ const loop = new Node('loop');
 const assignment = new Node('assignment');
 const lambda = new Node('lambda');
 const conditional = new Node('conditional');
-const modifier = new Node('modifier');
 const call = new Node('call');
 
 const chain = new Node('chain');
@@ -102,9 +101,9 @@ const opLevels = [
 const operator = opLevels
   .map((ops, i) => new Node('operator', ctx => {
     const left = ctx.expect(operator[i + 1]);
-    const filter = (t: Token) => ops.includes(t.value);
-    if (ctx.assert(filter)) {
-      while (ctx.accept(filter)) {
+    const filter = (t?: Token) => !!t && ops.includes(t.value);
+    if (ctx.assert(filter) || ctx.assert('modifier') && filter(ctx.next())) {
+      while (ctx.accept(filter) || ctx.accept('modifier') && ctx.expect(filter)) {
         ctx.expect(operator[i + 1]);
       }
       return;
@@ -112,11 +111,11 @@ const operator = opLevels
     return left;
   }))
   .concat(new Node('operator', ctx => {
-    const left = ctx.expect(modifier);
-    const filter = (t: Token) => t.type === 'identifier' && !opLevels.flat().includes(t.value);
-    if (ctx.assert(filter)) {
-      while (ctx.accept(filter)) {
-        ctx.expect(modifier);
+    const left = ctx.expect(call);
+    const filter = (t?: Token) => !!t && t.type === 'identifier' && !opLevels.flat().includes(t.value);
+    if (ctx.assert(filter) || ctx.assert('modifier') && filter(ctx.next())) {
+      while (ctx.accept(filter) || ctx.accept('modifier') && ctx.expect(filter)) {
+        ctx.expect(call);
       }
       return;
     }
@@ -124,15 +123,8 @@ const operator = opLevels
   }));
 
 
-modifier.is(ctx => {
-  if (!ctx.accept('modifier')) return ctx.expect(call);
-  ctx.expect(modifier);
-  return;
-});
-
-
 call.is(ctx => {
-  if (ctx.accept('identifier')) {
+  if (ctx.accept('identifier') || ctx.accept('modifier') && ctx.expect('identifier')) {
     ctx.accept(chain);
     return;
   }

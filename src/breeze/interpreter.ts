@@ -36,14 +36,13 @@ export default {
       case 'assignment': return this.assignment(expr as ParsedNode);
       case 'lambda': return this.lambda(expr as ParsedNode);
       case 'conditional': return this.conditional(expr as ParsedNode);
-      case 'modifier': return this.modifier(expr as ParsedNode);
       case 'operator': return this.operator(expr as ParsedNode);
       case 'call': return this.call(expr as ParsedNode);
       case 'chain': return this.chain(expr as ParsedNode);
       case 'list': return this.list(expr as ParsedNode);
       case 'array': return this.array(expr as ParsedNode);
       case 'string': return this.string(expr as Token);
-      case 'characters': return this.character(expr as Token);
+      case 'character': return this.character(expr as Token);
       case 'number': return this.number(expr as Token);
       default: throw Error(`Unknown expression type: ${expr.type}`);
     }
@@ -123,69 +122,88 @@ export default {
     return (ctx: BreezeContext, args: any[]) => condition(ctx, args)[0] ? then(ctx, args) : not(ctx, args);
   },
 
-  modifier(node: ParsedNode) {
-    const modifier = node.children[0].value;
-    const expression = this.expression(node.children[1]);
-
-    return (ctx: BreezeContext, args: any[]) => {
-      switch (modifier) {
-        case '⊙':
-        case '⊕': {
-          switch (args.length) {
-            case 0: return [];
-            case 1: {
-              const arg = args[0];
-              return Array.isArray(arg) ? arg.map(x => expression(ctx, [x])) : expression(ctx, [arg]);
-            }
-            default: return _array.reduceNoSkip(args, (a, b) => {
-              switch (+Array.isArray(a) + +Array.isArray(b) * 2) {
-                case 0: return expression(ctx, [a, b]);
-                case 1: return [a.flatMap((x: any) => expression(ctx, [x, b]))];
-                case 2: return [b.flatMap((x: any) => expression(ctx, [a, x]))];
-                case 3: {
-                  const [l, s] = a.length < b.length ? [b, a] : [a, b];
-                  return [l.flatMap((x: any, i: number) => i < s.length 
-                    ? expression(ctx, [x, s[i]]) 
-                    : modifier === '⊙' 
-                      ? x 
-                      : expression(ctx, [x, null])
-                  )];
-                }
-                default: throw new Error();
-              }
-            });
+  modifier(modifier: string, func: (a: any, b?: any) => any, args: any[]) {
+    switch (modifier) {
+      case '⊙':
+      case '⊕': {
+        switch (args.length) {
+          case 0: return [];
+          case 1: {
+            const arg = args[0];
+            return Array.isArray(arg) ? arg.map(x => func(x)) : func(arg);
           }
-        };
+          default: return _array.reduceNoSkip(args, (a, b) => {
+            switch (+Array.isArray(a) + +Array.isArray(b) * 2) {
+              case 0: return func(a, b);
+              case 1: return [a.flatMap((x: any) => func(x, b))];
+              case 2: return [b.flatMap((x: any) => func(a, x))];
+              case 3: {
+                const [l, s] = a.length < b.length ? [b, a] : [a, b];
+                return [l.flatMap((x: any, i: number) => i < s.length 
+                  ? func(x, s[i]) 
+                  : modifier === '⊙' 
+                    ? x 
+                    : func(x, null)
+                )];
+              }
+              default: throw new Error();
+            }
+          });
+        }
+      };
 
-        case '⊗': throw new Error('⊗ has no implementation yet');
+      case '⊗': throw new Error('⊗ has no implementation yet');
 
-        default: throw new Error();
-      }
+      default: throw new Error();
     }
   },
 
   operator(node: ParsedNode) {
-    const ops = <Token[]>node.children.filter((_,i) => i%2);
-    const expressions = node.children.filter((_,i) => !(i%2)).map(child => this.expression(child));
+    const ops: Token[] = [];
+    const modifiers: string[] = [];
+    const expressions: ((ctx: BreezeContext, args: any[]) => any)[] = [];
+    
+    for (let i = 0; i < node.children.length; i += 2) {
+      expressions.push(this.expression(node.children[i]));
+      modifiers.push(node.children[i+1]?.type === 'modifier' ? node.children[++i].value : '');
+      if (node.children[i+1]) ops.push(node.children[i+1]);
+    }
 
     return expressions.reduce((left, right, i) => (ctx: BreezeContext, args: any[]) => {
       const op = ops[i-1].value;
+      const modifier = modifiers[i-1];
       const variable = ctx.variables.get(op);
-      if (typeof variable?.[0] === 'function') return variable[0](...left(ctx, args), ...right(ctx, args));
-      if (ctx.builtins[op]) return ctx.builtins[op](ctx, left(ctx, args).concat(right(ctx, args)), []);
+      
+      if (typeof variable?.[0] === 'function') return modifier
+        ? this.modifier(modifier, variable[0], left(ctx, args).concat(right(ctx, args)))
+        : variable[0](...left(ctx, args), ...right(ctx, args));
+      
+      if (ctx.builtins[op]) return modifier
+        ? this.modifier(modifier, (a, b) => ctx.builtins[op](ctx, [a, b], []), left(ctx, args).concat(right(ctx, args)))
+        : ctx.builtins[op](ctx, left(ctx, args).concat(right(ctx, args)), []);
+      
       throw new Error(`${op} is neither a variable list with a function as first element, nor a builtin function!`);
     });
   },
 
   call(node: ParsedNode) {
-    const name = node.children[0].value;
-    const expression = node.children[1] ? this.expression(node.children[1]) : () => [];
+    const modifier = node.children[0].type === 'modifier' ? node.children[0].value : '';
+    const name = node.children[modifier ? 1 : 0].value;
+    const expression = node.children[modifier ? 2 : 1] ? this.expression(node.children[modifier ? 2 : 1]) : () => [];
 
     return (ctx: BreezeContext, args: any[]) => {
       const variable = ctx.variables.get(name);
-      if (typeof variable?.[0] === 'function') return variable[0](...expression(ctx, args));
+      
+      if (typeof variable?.[0] === 'function') return modifier
+        ? this.modifier(modifier, variable[0], expression(ctx, args))
+        : variable[0](...expression(ctx, args));
+      
       if (variable) return variable;
-      if (ctx.builtins[name]) return ctx.builtins[name](ctx, expression(ctx, args), args);
+      
+      if (ctx.builtins[name]) return modifier
+        ? this.modifier(modifier, (a, b) => ctx.builtins[name](ctx, [a, b], []), args.concat(expression(ctx, args)))
+        : ctx.builtins[name](ctx, expression(ctx, args), args);
+      
       throw new Error(`${name} is neither a variable, nor a builtin function!`);
     }
   },

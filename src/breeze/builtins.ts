@@ -593,6 +593,8 @@ function supersetOf(a: any[], b: any[]): boolean {
 function join(a: any, b?: any): any {
   const types = typesOf(b !== undefined ? [a, b] : [a]);
   switch (true) {
+    case types === 'array': return a.join('');
+
     case /^(array|string),(boolean|number|string)$/.test(types): return [...a].join(b);
     case /^(boolean|number),(array|string)$/.test(types): return [...b].join(a);
     default: throw new Error(`Cannot join arguments of types \`${types}\``);

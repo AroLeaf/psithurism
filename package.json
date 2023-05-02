@@ -9,7 +9,7 @@
     "dev": "npm run build && node dist/sidhe.js"
   },
   "bin": {
-    "sidhe": "dist/sidhe.js"
+    "sidhe": "dist/sidhe/index.js"
   },
   "license": "MIT",
   "author": {
