@@ -1,31 +1,29 @@
 import { Node, Token } from '@aroleaf/parser';
 
 const parser = new Node('program');
-const blockFunction = new Node('function');
+const func = new Node('function');
 const pipe = new Node('pipe');
 
-const inlineFunction = new Node('function');
 const loop = new Node('loop');
 const assignment = new Node('assignment');
 const lambda = new Node('lambda');
 const conditional = new Node('conditional');
 const call = new Node('call');
 
-const chain = new Node('chain');
 const list = new Node('list');
 const array = new Node('array');
 const literal = new Node('literal');
 
 
 parser.is(ctx => {
-  ctx.expect(blockFunction, pipe);
+  ctx.expect(func, pipe);
   while (ctx.ignore('break')) {
-    ctx.accept(blockFunction, pipe);
+    ctx.accept(func, pipe);
   }
 });
 
 
-blockFunction.is(ctx => {
+func.is(ctx => {
   ctx.expect('identifier');
   ctx.discard('function');
   ctx.expect(pipe);
@@ -33,21 +31,14 @@ blockFunction.is(ctx => {
 
 
 pipe.is(ctx => {
-  const left = ctx.expect(inlineFunction, loop);
+  const left = ctx.expect(loop);
   if (ctx.assert('pipe')) {
     while (ctx.accept('pipe')) {
-      ctx.expect(inlineFunction, loop);
+      ctx.expect(loop);
     }
     return;
   }
   return left;
-});
-
-
-inlineFunction.is(ctx => {
-  ctx.expect('identifier');
-  ctx.discard('function');
-  ctx.expect(inlineFunction, loop);
 });
 
 
@@ -102,8 +93,8 @@ const operator = opLevels
   .map((ops, i) => new Node('operator', ctx => {
     const left = ctx.expect(operator[i + 1]);
     const filter = (t?: Token) => !!t && ops.includes(t.value);
-    if (ctx.assert(filter) || ctx.assert('modifier') && filter(ctx.next())) {
-      while (ctx.accept(filter) || ctx.accept('modifier') && ctx.expect(filter)) {
+    if (ctx.assert(filter)) {
+      while (ctx.accept(filter)) {
         ctx.expect(operator[i + 1]);
       }
       return;
@@ -113,8 +104,8 @@ const operator = opLevels
   .concat(new Node('operator', ctx => {
     const left = ctx.expect(call);
     const filter = (t?: Token) => !!t && t.type === 'identifier' && !opLevels.flat().includes(t.value);
-    if (ctx.assert(filter) || ctx.assert('modifier') && filter(ctx.next())) {
-      while (ctx.accept(filter) || ctx.accept('modifier') && ctx.expect(filter)) {
+    if (ctx.assert(filter)) {
+      while (ctx.accept(filter)) {
         ctx.expect(call);
       }
       return;
@@ -124,22 +115,11 @@ const operator = opLevels
 
 
 call.is(ctx => {
-  if (ctx.accept('identifier') || ctx.accept('modifier') && ctx.expect('identifier')) {
-    ctx.accept(chain);
+  if (ctx.accept('identifier')) {
+    ctx.accept(list);
     return;
   }
-  return ctx.expect(chain);
-});
-
-
-const chainAllows = ['lambda', 'break', 'identifier', list];
-chain.is(ctx => {
-  if (!ctx.assert('squiggly_open')) return ctx.expect(list);
-  ctx.discard('squiggly_open');
-  ctx.expect(...chainAllows);
-  while (ctx.accept(...chainAllows));
-  ctx.discard('squiggly_close');
-  return;
+  return ctx.expect(list);
 });
 
 
@@ -161,7 +141,7 @@ array.is(ctx => {
 });
 
 
-literal.is(ctx => ctx.expect('string', 'character', 'number'));
+literal.is(ctx => ctx.expect('string', 'character', 'number', 'regex'));
 
 
 export default parser;
