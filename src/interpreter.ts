@@ -111,12 +111,12 @@ export default {
     const then = !(node.children.length % 2) ? this.expression(node.children[1]) : () => [null];
     const not = node.children.length > 2 ? this.expression(node.children.at(-1)!) : () => [null];
     
-    return (state: State, args: any[]) => condition(state, args)[0] ? then(state, args) : not(state, args);
+    return (state: State, args: any[]) => condition(state, args) ? then(state, args) : not(state, args);
   },
 
   operator(node: ParsedNode) {
-    const expressions = node.children.filter((_,i) => i%2).map(e => this.expression(e));
-    const ops = node.children.filter((_,i) => !(i%2));
+    const expressions = node.children.filter((_,i) => !(i%2)).map(e => this.expression(e));
+    const ops = node.children.filter((_,i) => i%2);
     
     return expressions.reduce((left, right, i) => (state: State, args: any[]) => {
       const op = ops[i-1].value;

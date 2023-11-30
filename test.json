@@ -1,0 +1,184 @@
+{
+  "type": "program",
+  "children": [
+    {
+      "type": "pipe",
+      "children": [
+        {
+          "type": "operator",
+          "children": [
+            {
+              "type": "number",
+              "raw": "1",
+              "value": "1",
+              "line": 1,
+              "col": 1
+            },
+            {
+              "type": "identifier",
+              "raw": "~",
+              "value": "~",
+              "line": 1,
+              "col": 2
+            },
+            {
+              "type": "number",
+              "raw": "101",
+              "value": "101",
+              "line": 1,
+              "col": 3
+            }
+          ]
+        },
+        {
+          "type": "pipe",
+          "raw": "≺",
+          "value": "≺",
+          "line": 1,
+          "col": 6
+        },
+        {
+          "type": "operator",
+          "children": [
+            {
+              "type": "operator",
+              "children": [
+                {
+                  "type": "list",
+                  "children": [
+                    {
+                      "type": "conditional",
+                      "children": [
+                        {
+                          "type": "call",
+                          "children": [
+                            {
+                              "type": "identifier",
+                              "raw": "%",
+                              "value": "%",
+                              "line": 1,
+                              "col": 8
+                            },
+                            {
+                              "type": "number",
+                              "raw": "3",
+                              "value": "3",
+                              "line": 1,
+                              "col": 9
+                            }
+                          ]
+                        },
+                        {
+                          "type": "else",
+                          "raw": ":",
+                          "value": ":",
+                          "line": 1,
+                          "col": 11
+                        },
+                        {
+                          "type": "string",
+                          "raw": "'Fizz'",
+                          "value": "Fizz",
+                          "line": 1,
+                          "col": 12
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "identifier",
+                  "raw": "+",
+                  "value": "+",
+                  "line": 1,
+                  "col": 19
+                },
+                {
+                  "type": "list",
+                  "children": [
+                    {
+                      "type": "conditional",
+                      "children": [
+                        {
+                          "type": "call",
+                          "children": [
+                            {
+                              "type": "identifier",
+                              "raw": "%",
+                              "value": "%",
+                              "line": 1,
+                              "col": 21
+                            },
+                            {
+                              "type": "number",
+                              "raw": "5",
+                              "value": "5",
+                              "line": 1,
+                              "col": 22
+                            }
+                          ]
+                        },
+                        {
+                          "type": "else",
+                          "raw": ":",
+                          "value": ":",
+                          "line": 1,
+                          "col": 24
+                        },
+                        {
+                          "type": "string",
+                          "raw": "'Buzz'",
+                          "value": "Buzz",
+                          "line": 1,
+                          "col": 25
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "identifier",
+              "raw": "∨",
+              "value": "∨",
+              "line": 1,
+              "col": 32
+            },
+            {
+              "type": "call",
+              "children": [
+                {
+                  "type": "identifier",
+                  "raw": "_",
+                  "value": "_",
+                  "line": 1,
+                  "col": 33
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "pipe",
+          "raw": "≺",
+          "value": "≺",
+          "line": 1,
+          "col": 34
+        },
+        {
+          "type": "call",
+          "children": [
+            {
+              "type": "identifier",
+              "raw": "…",
+              "value": "…",
+              "line": 1,
+              "col": 35
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,7 +27,7 @@ function operatorBuiltin(func: (a: any, b: any, v?: boolean) => any): Builtin {
     
     operand(_state, piped, passed) {
       const args = piped.concat(passed);
-      return _array.reduceNoSkip(args, (a, b) => func(a, b));
+      return [_array.reduceNoSkip(args, (a, b) => func(a, b))];
     },
   }
 }
@@ -39,6 +39,9 @@ function add(a: any, b: any, v = false): any {
     case v && types === 'array,array': return vectorize(a, b, add);
     case v && /^array,/.test(types): return vectorize(a, [b], add);
     case v && /,array$/.test(types): return vectorize([a], b, add);
+
+    case types === 'string,null': return a;
+    case types === 'null,string': return b;
 
     case /^((string|number|boolean|null)(,|$)){2}/.test(types): return a + b;
 
@@ -606,6 +609,53 @@ const builtins = {
   '∋': setOperatorBuiltin(has),
   '⊂': setOperatorBuiltin(subsetOf),
   '⊃': setOperatorBuiltin(supersetOf),
+
+  '~': {
+    operand(_state, piped, passed) {
+      const args = piped.concat(passed);
+      let [start, end, step] = <[number, number, number]>args;
+      if (!end) {
+        end = start;
+        start = 0;
+      }
+      step ||= start < end ? 1 : -1;
+      return _number.range(start, end, step);
+    },
+
+    operator(_state, left, right) {
+      const start = left[0];
+      const end = right[0];
+      const step = start < end ? 1 : -1;
+      return _number.range(start, end, step);
+    },
+  },
+
+
+  // OUTPUT FUNCTIONS
+
+  '.': {
+    operand(state, piped, passed) {
+      process.stdout.write(piped.concat(passed).join(''))
+      return [];
+    },
+
+    operator(state, left, right) {
+      process.stdout.write(left.join(right[0] || ''))
+      return [];
+    },
+  },
+
+  '…': {
+    operand(state, piped, passed) {
+      console.log(...piped.concat(passed));
+      return [];
+    },
+
+    operator(state, left, right) {
+      console.log(left.join(right[0] || ''));
+      return [];
+    },
+  },
 
 
   // CONSTANTS AND VARIABLES
