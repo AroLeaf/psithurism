@@ -1,7 +1,8 @@
 export interface State {
   variables: Map<string, any[]>;
+  portals: Map<any, any[]>;
   builtins: Record<string, Builtin>;
-  i: number;
+  i: number[];
   $: any[];
 }
 

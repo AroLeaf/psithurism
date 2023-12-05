@@ -65,3 +65,7 @@ export function chunksOfSize<T>(arr: T[], size: number): T[][] {
   const idx = (i: number) => i*size + Math.min(i, arr.length % count);
   return Array.from({ length: count }, (_, i) => arr.slice(idx(i), idx(i+1)));
 }
+
+export function transpose<T>(arrs: T[][], empty?: any): T[][] {
+  return arrs.toSorted((a,b) => b.length - a.length)[0]!.map((_, i) => arrs.map(arr => arr.length > i ? arr[i] : empty));
+}

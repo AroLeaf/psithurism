@@ -5,7 +5,9 @@ const func = new Node('function');
 const pipe = new Node('pipe');
 
 const loop = new Node('loop');
-const assignment = new Node('assignment');
+const portalIn = new Node('portal_in');
+const portalOut = new Node('portal_out');
+const portalThrough = new Node('portal_through');
 const lambda = new Node('lambda');
 const conditional = new Node('conditional');
 const call = new Node('call');
@@ -43,7 +45,7 @@ pipe.is(ctx => {
 
 
 loop.is(ctx => {
-  const left = ctx.expect(assignment, lambda);
+  const left = ctx.expect(portalIn);
   if (ctx.ignore('loop')) {
     ctx.expect(loop);
     return;
@@ -52,10 +54,33 @@ loop.is(ctx => {
 });
 
 
-assignment.is(ctx => {
-  ctx.expect('identifier');
-  ctx.discard('assign');
-  ctx.expect(assignment, lambda);
+portalIn.is(ctx => {
+  const left = ctx.expect(portalOut, portalThrough, lambda);
+  if (ctx.assert('portal_in')) {
+    while(ctx.ignore('portal_in')) {
+      ctx.expect('identifier', portalOut, portalThrough, lambda);
+    }
+    return;
+  }
+  return left;
+});
+
+
+portalOut.is(ctx => {
+  ctx.expect('identifier', portalThrough);
+  do {
+    ctx.discard('portal_out');
+    ctx.expect(portalThrough);
+  } while(ctx.assert('portal_out'));
+});
+
+
+portalThrough.is(ctx => {
+  ctx.expect('identifier', lambda);
+  do {
+    ctx.discard('portal_through');
+    ctx.expect(lambda);
+  } while(ctx.assert('portal_through'));
 });
 
 
@@ -78,7 +103,6 @@ conditional.is(ctx => {
 
 
 const opLevels = [
-  ['≔'],
   ['∨'], ['⊻'], ['∧'],
   ['‖'], ['^'], ['&'],
   ['=', '≈', '≠', '≉'],
