@@ -46,8 +46,8 @@ function overload(name: string, overloads: Record<string, (a: any, b: any, v?: b
   }
 
   return (a: any, b: any, v?: boolean) => {
-    const atype = typesof(a);
-    const btype = typesof(b);
+    const types = typesof(a, b);
+    const [ atype, btype ] = types.split(',');
 
     if (v && table.vectorize && (atype === 'array' || btype === 'array')) {
       const args: [any[], any[]] = [
@@ -57,13 +57,17 @@ function overload(name: string, overloads: Record<string, (a: any, b: any, v?: b
       return vectorize(...args, table.vectorize);
     }
     
-    const overload = table[`${atype},${btype}`]
+    const overload = table[types]
       || table[`${atype},*`]
       || table[`*,${btype}`]
       || table['*,*']
       || table['*'];
     
-    if (!overload) throw new Error(`No overload found for ${atype} ${name} ${btype}.`);
+    if (!overload) {
+      if (typeof btype === 'undefined') throw new Error(`No overload found for ${name} ${atype}.`);
+      else throw new Error(`No overload found for ${atype} ${name} ${btype}.`);
+    }
+
     return overload(a, b, v);
   }
 }
@@ -114,8 +118,8 @@ const multiply = overload('multiply', {
     const f = (a: string, b: string): string[] => {
       if (!(a || b)) return [''];
 
-      const ca = a[0] || '';
-      const cb = b[0] || '';
+      const ca   = a[0] || '';
+      const cb   = b[0] || '';
       const rest = f(a.slice(1), b.slice(1));
 
       return [...new Set(ca === cb
@@ -410,6 +414,14 @@ function supersetOf(a: any, b: any): any {
   return b.every((v: any) => a.includes(v));
 }
 
+function properSubsetOf(a: any, b: any): any {
+  return a.length < b.length && a.every((v: any) => b.includes(v));
+}
+
+function properSupersetOf(a: any, b: any): any {
+  return a.length > b.length && b.every((v: any) => a.includes(v));
+}
+
 
 const builtins = {
   // BASIC FLOW FUNCTIONS
@@ -554,8 +566,10 @@ const builtins = {
   '∖': setOperatorBuiltin(difference),
   '∈': setOperatorBuiltin(memberOf),
   '∋': setOperatorBuiltin(has),
-  '⊂': setOperatorBuiltin(subsetOf),
-  '⊃': setOperatorBuiltin(supersetOf),
+  '⊆': setOperatorBuiltin(subsetOf),
+  '⊇': setOperatorBuiltin(supersetOf),
+  '⊂': setOperatorBuiltin(properSubsetOf),
+  '⊃': setOperatorBuiltin(properSupersetOf),
 
   '~': {
     operand(_state, piped, passed) {
